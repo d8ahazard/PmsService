@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
-using System.Windows.Input;
+using Microsoft.AspNetCore.SignalR.Client;
 using PlexServiceCommon;
 
 namespace PlexServiceTray
 {
-    public class SettingsWindowViewModel:ObservableObject
-    {
+    public class SettingsWindowViewModel:ObservableObject {
+        private HubConnection _connection;
         /// <summary>
         /// The server endpoint port
         /// </summary>
@@ -213,7 +214,7 @@ namespace PlexServiceTray
             }
         }
 
-        public string AddToolTip
+        public string? AddToolTip
         {
             get {
                 return SelectedTab switch {
@@ -242,20 +243,19 @@ namespace PlexServiceTray
         /// <summary>
         /// Use one settings instance for the life of the window.
         /// </summary>
-        public Settings WorkingSettings { get; set; }
+        public Settings WorkingSettings { get; }
 
-        public SettingsWindowViewModel(Settings settings)
-        {
+        public SettingsWindowViewModel(HubConnection connection, Dictionary<string, bool> states,
+            Settings settings) {
+            _connection = connection;
+            _states = states;
             WorkingSettings = settings;
             AuxiliaryApplications = new ObservableCollection<AuxiliaryApplicationViewModel>();
             DriveMaps = new ObservableCollection<DriveMapViewModel>();
 
             WorkingSettings.AuxiliaryApplications.ForEach(x =>
             {
-                var auxApp = new AuxiliaryApplicationViewModel(x, this);
-                auxApp.StartRequest += OnAuxAppStartRequest;
-                auxApp.StopRequest += OnAuxAppStopRequest;
-                auxApp.CheckRunningRequest += OnAuxAppCheckRunRequest;
+                var auxApp = new AuxiliaryApplicationViewModel(x, connection, states, this);
                 AuxiliaryApplications.Add(auxApp);
             });
 
@@ -279,13 +279,13 @@ namespace PlexServiceTray
             switch (SelectedTab)
             {
                 case 0:
-                    var newAuxApp = new AuxiliaryApplication();
-                    newAuxApp.Name = "New Auxiliary Application";
-                    var newAuxAppViewModel = new AuxiliaryApplicationViewModel(newAuxApp, this);
-                    newAuxAppViewModel.StartRequest += OnAuxAppStartRequest;
-                    newAuxAppViewModel.StopRequest += OnAuxAppStopRequest;
-                    newAuxAppViewModel.CheckRunningRequest += OnAuxAppCheckRunRequest;
-                    newAuxAppViewModel.IsExpanded = true;
+                    var newAuxApp = new AuxiliaryApplication {
+                        Name = "New Auxiliary Application"
+                    };
+                    var newAuxAppViewModel = new AuxiliaryApplicationViewModel(newAuxApp, _connection, _states, this)
+                        {
+                            IsExpanded = true
+                        };
                     AuxiliaryApplications.Add(newAuxAppViewModel);
                     break;
                 case 1:
@@ -321,8 +321,6 @@ namespace PlexServiceTray
             switch (SelectedTab)
             {
                 case 0:
-                    SelectedAuxApplication.StartRequest -= OnAuxAppStartRequest;
-                    SelectedAuxApplication.StopRequest -= OnAuxAppStopRequest;
                     AuxiliaryApplications.Remove(SelectedAuxApplication);
                     break;
                 case 1:
@@ -368,6 +366,8 @@ namespace PlexServiceTray
         /// </summary>
         #region CancelCommand
         RelayCommand _cancelCommand;
+
+        private readonly Dictionary<string, bool> _states;
         public RelayCommand CancelCommand => _cancelCommand ??= new RelayCommand(OnCancel);
 
         private void OnCancel(object parameter)
@@ -377,29 +377,8 @@ namespace PlexServiceTray
 
         #endregion CancelCommand
 
-        #region Aux app start/stop request handling
+        
 
-        private void OnAuxAppStopRequest(object sender, EventArgs e)
-        {
-            AuxAppStopRequest?.Invoke(sender, e);
-        }
-
-        public event EventHandler AuxAppStopRequest;
-
-        private void OnAuxAppStartRequest(object sender, EventArgs e)
-        {
-            AuxAppStartRequest?.Invoke(sender, e);
-        }
-
-        public event EventHandler AuxAppStartRequest;
-
-        private void OnAuxAppCheckRunRequest(object sender, EventArgs e)
-        {
-            AuxAppCheckRunRequest?.Invoke(sender, e);
-        }
-
-        public event EventHandler AuxAppCheckRunRequest;
-
-        #endregion
+        
     }
 }

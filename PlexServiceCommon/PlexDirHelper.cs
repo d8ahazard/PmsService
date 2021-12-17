@@ -13,7 +13,7 @@ namespace PlexServiceCommon {
 		public static string LogFile {
 			get {
 				var dt = DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-				var logPath = Path.Combine(AppDataPath, $"PlexService{dt}.log");
+				var logPath = Path.Combine(AppDataPath, $"PMSS{dt}.log");
 				return logPath;
 			}
 		}

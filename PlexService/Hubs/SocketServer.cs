@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using PlexService.Models;
@@ -15,8 +16,8 @@ namespace PlexService.Hubs {
 		private readonly PlexMediaServerService _ps;
 		
 
-		public SocketServer(PlexMediaServerService ps) {
-			_ps = ps;
+		public SocketServer() {
+			_ps = PlexMediaServerService._instance;
 		}
 
 
@@ -58,7 +59,7 @@ namespace PlexService.Hubs {
 		}
 
 		public Task StopPlex() {
-			_ps.Monitor.EndPlex();
+			_ps.Monitor.Stop();
 			return Task.CompletedTask;
 		}
 		
@@ -67,14 +68,12 @@ namespace PlexService.Hubs {
 			return Task.CompletedTask;
 		}
 		
-		public Task StartAuxApp(string name) {
-			_ps.Monitor.StartAuxApp(name);
-			return Task.CompletedTask;
+		public bool StartAuxApp(string name) {
+			return _ps.Monitor.StartAuxApp(name);
 		}
 		
-		public Task StopAuxApp(string name) {
-			_ps.Monitor.StopAuxApp(name);
-			return Task.CompletedTask;
+		public bool StopAuxApp(string name) {
+			return _ps.Monitor.StopAuxApp(name);
 		}
 		
 
@@ -83,8 +82,14 @@ namespace PlexService.Hubs {
 			return Task.CompletedTask;
 		}
 
+		public string GetLog() {
+			return LogWriter.Read().Result;
+		}
+
 		public bool IsAuxAppRunning(string name) {
-			return _ps.Monitor.IsAuxAppRunning(name);
+			var res = _ps.Monitor.IsAuxAppRunning(name);
+			Log.Debug("Aux app check? " + res);
+			return res;
 		}
 
 		public override async Task OnConnectedAsync() {
@@ -94,6 +99,12 @@ namespace PlexService.Hubs {
 				await Clients.Caller.SendAsync("state", _ps.State);
 				await Clients.Caller.SendAsync("pmsPath", PlexDirHelper.PmsDataPath);
 				await Clients.Caller.SendAsync("logPath", PlexDirHelper.LogFile);
+				var states = new Dictionary<string, bool>();
+				foreach (var aa in _ps.Monitor.AuxAppMonitors) {
+					states[aa.Name] = aa.Running;
+				}
+
+				if (states.Count > 0) await Clients.Caller.SendAsync("states", states);
 			} catch (Exception e) {
 				Log.Warning("Connect exception: " + e.Message);
 			}

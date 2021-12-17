@@ -12,11 +12,10 @@ namespace PlexService
     /// <summary>
     /// Service that runs an instance of PmsMonitor to maintain an instance of Plex Media Server in session 0
     /// </summary>
-    public partial class PlexMediaServerService : BackgroundService
-    {
-        public PmsMonitor Monitor;
-        private static PlexMediaServerService _instance;
-
+    public partial class PlexMediaServerService : BackgroundService {
+        public static PlexMediaServerService _instance;
+        public readonly PmsMonitor Monitor;
+        
         public PlexState State => Monitor.State;
 
         public PlexMediaServerService(IHubContext<SocketServer> hubContext) {
@@ -25,20 +24,16 @@ namespace PlexService
             _instance = this;
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken) {
-            return Task.Run(async () => {
-                Monitor.Start();
-                while (!stoppingToken.IsCancellationRequested) {
-                    await Task.Delay(50, CancellationToken.None);
-                }
-                Log.Debug("Stopping...");
-                Monitor.Stop();
-                Log.Debug("Stopped.");
-            }, CancellationToken.None);
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
+            while (!stoppingToken.IsCancellationRequested) {
+                await Task.Delay(50, CancellationToken.None);
+            }
+            Monitor.Stop();
         }
-        
+
         public static PlexMediaServerService GetInstance() {
             return _instance;
         }
+        
     }
 }

@@ -1,23 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using PlexServiceCommon;
-using System.Windows.Input;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PlexServiceTray.Validation;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.SignalR.Client;
+using Serilog;
 
-namespace PlexServiceTray
-{
-    public class AuxiliaryApplicationViewModel:ObservableObject
-    {
+namespace PlexServiceTray {
+    public class AuxiliaryApplicationViewModel : ObservableObject {
         #region Properties
 
         [UniqueAuxAppName]
-        public string Name
-        {
+        public string Name {
             get => _auxApplication.Name;
-            set 
-            {
+            set {
                 if (_auxApplication.Name == value) return;
 
                 _auxApplication.Name = value;
@@ -25,12 +23,10 @@ namespace PlexServiceTray
             }
         }
 
-        [Required(ErrorMessage ="A path to execute must be specified")]
-        public string FilePath
-        {
+        [Required(ErrorMessage = "A path to execute must be specified")]
+        public string FilePath {
             get => _auxApplication.FilePath;
-            set 
-            {
+            set {
                 if (_auxApplication.FilePath == value) return;
 
                 _auxApplication.FilePath = value;
@@ -38,11 +34,9 @@ namespace PlexServiceTray
             }
         }
 
-        public string WorkingFolder
-        {
+        public string WorkingFolder {
             get => _auxApplication.WorkingFolder;
-            set 
-            {
+            set {
                 if (_auxApplication.WorkingFolder == value) return;
 
                 _auxApplication.WorkingFolder = value;
@@ -50,11 +44,9 @@ namespace PlexServiceTray
             }
         }
 
-        public string Argument
-        {
+        public string Argument {
             get => _auxApplication.Argument;
-            set 
-            {
+            set {
                 if (_auxApplication.Argument == value) return;
 
                 _auxApplication.Argument = value;
@@ -62,23 +54,19 @@ namespace PlexServiceTray
             }
         }
 
-        public bool KeepAlive
-        {
+        public bool KeepAlive {
             get => _auxApplication.KeepAlive;
-            set
-            {
+            set {
                 if (_auxApplication.KeepAlive == value) return;
 
                 _auxApplication.KeepAlive = value;
                 OnPropertyChanged(nameof(KeepAlive));
             }
         }
-        
-        public bool LogOutput
-        {
+
+        public bool LogOutput {
             get => _auxApplication.LogOutput;
-            set
-            {
+            set {
                 if (_auxApplication.LogOutput == value) return;
 
                 _auxApplication.LogOutput = value;
@@ -86,25 +74,11 @@ namespace PlexServiceTray
             }
         }
 
-        private bool _running;
+        public bool Running { get; set; }
 
-        public bool Running
-        {
-            get => _running;
-            set 
-            {
-                if (_running == value) return;
-
-                _running = value;
-                OnPropertyChanged(nameof(Running));
-            }
-        }
-
-        public string Url
-        {
+        public string Url {
             get => _auxApplication.Url;
-            set 
-            {
+            set {
                 if (_auxApplication.Url == value) return;
 
                 _auxApplication.Url = value;
@@ -112,43 +86,41 @@ namespace PlexServiceTray
             }
         }
 
-        public override bool IsSelected
-        {
+        public override bool IsSelected {
             get => _isSelected;
-            set
-            {
+            set {
                 if (_isSelected == value) return;
 
                 _isSelected = value;
                 OnPropertyChanged(nameof(IsSelected));
-
-                if (value)
-                    OnCheckRunningRequest();
             }
         }
 
         #endregion Properties
 
         private readonly AuxiliaryApplication _auxApplication;
+        private readonly HubConnection _connection;
 
-        public AuxiliaryApplicationViewModel(AuxiliaryApplication auxApplication, SettingsWindowViewModel context)
-        {
-            ValidationContext = context;
+        public AuxiliaryApplicationViewModel(AuxiliaryApplication auxApplication, HubConnection hubConnection,
+            Dictionary<string, bool> states,
+            SettingsWindowViewModel context) {
             _auxApplication = auxApplication;
+            _connection = hubConnection;
+            Running = states.ContainsKey(auxApplication.Name) && states[auxApplication.Name];
+            ValidationContext = context;
             IsExpanded = false;
         }
 
-        public AuxiliaryApplication GetAuxiliaryApplication()
-        {
+        public AuxiliaryApplication GetAuxiliaryApplication() {
             return _auxApplication;
         }
 
         #region BrowseCommand
+
         RelayCommand _browseCommand;
         public RelayCommand BrowseCommand => _browseCommand ??= new RelayCommand(OnBrowse);
 
-        private void OnBrowse(object parameter)
-        {
+        private void OnBrowse(object parameter) {
             var ofd = new OpenFileDialog {
                 FileName = FilePath
             };
@@ -157,8 +129,7 @@ namespace PlexServiceTray
             }
 
             FilePath = ofd.FileName;
-            if(string.IsNullOrEmpty(WorkingFolder))
-            {
+            if (string.IsNullOrEmpty(WorkingFolder)) {
                 WorkingFolder = System.IO.Path.GetDirectoryName(FilePath);
             }
         }
@@ -166,21 +137,20 @@ namespace PlexServiceTray
         #endregion BrowseCommand
 
         #region BrowseFolderCommand
-        RelayCommand _browseFolderCommand;
-        public RelayCommand BrowseFolderCommand=> _browseFolderCommand ??= new RelayCommand(OnBrowseFolder);
 
-        private void OnBrowseFolder(object parameter)
-        {
+        RelayCommand _browseFolderCommand;
+        public RelayCommand BrowseFolderCommand => _browseFolderCommand ??= new RelayCommand(OnBrowseFolder);
+
+        private void OnBrowseFolder(object parameter) {
             var fbd = new VistaFolderBrowserDialog {
                 Description = "Please select working directory",
                 UseDescriptionForTitle = true
             };
-            if (!string.IsNullOrEmpty(WorkingFolder))
-            {
+            if (!string.IsNullOrEmpty(WorkingFolder)) {
                 fbd.SelectedPath = WorkingFolder;
             }
-            if (fbd.ShowDialog() == true)
-            {
+
+            if (fbd.ShowDialog() == true) {
                 WorkingFolder = fbd.SelectedPath;
             }
         }
@@ -188,20 +158,20 @@ namespace PlexServiceTray
         #endregion BrowseFolderCommand
 
         #region StartCommand
-        RelayCommand _startCommand;
-        public RelayCommand StartCommand => _startCommand ??= new RelayCommand(OnStart, CanStart); 
 
-        private bool CanStart(object parameter)
-        {
+        RelayCommand _startCommand;
+        public RelayCommand StartCommand => _startCommand ??= new RelayCommand(OnStart, CanStart);
+
+        private bool CanStart(object parameter) {
             return !Running;
         }
 
-        private void OnStart(object parameter)
-        {
-            StartRequest?.Invoke(this, EventArgs.Empty);
+        private void OnStart(object parameter) {
+            if (_connection.State is HubConnectionState.Connected && !Running) {
+                _connection.SendAsync("startAuxApp", Name);
+                Running = true;
+            }
         }
-
-        public event EventHandler StartRequest;
 
         #endregion StartCommand
 
@@ -209,45 +179,34 @@ namespace PlexServiceTray
         RelayCommand _stopCommand;
         public RelayCommand StopCommand => _stopCommand ??= new RelayCommand(OnStop, CanStop);
 
-        private bool CanStop(object parameter)
-        {
+        private bool CanStop(object parameter) {
             return Running;
         }
 
-        private void OnStop(object parameter)
-        {
-            StopRequest?.Invoke(this, EventArgs.Empty);
+        private void OnStop(object parameter) {
+            if (_connection.State is HubConnectionState.Connected && Running) {
+                _connection.SendAsync("stopAuxApp", Name);
+                Running = false;
+            }
         }
-
-        public event EventHandler StopRequest;
 
         #endregion StopCommand
 
         #region GoToUrlCommand
+
         RelayCommand _goToUrlCommand;
         public RelayCommand GoToUrlCommand => _goToUrlCommand ??= new RelayCommand(OnGoToUrl, CanGoToUrl);
 
-        private bool CanGoToUrl(object parameter)
-        {
+        private bool CanGoToUrl(object parameter) {
             return !string.IsNullOrEmpty(Url);
         }
 
-        private void OnGoToUrl(object parameter)
-        {
+        private void OnGoToUrl(object parameter) {
             System.Diagnostics.Process.Start(Url);
         }
 
         #endregion GoToUrlCommand
 
-        #region CheckRunningRequest
 
-        public event EventHandler CheckRunningRequest;
-
-        private void OnCheckRunningRequest()
-        {
-            CheckRunningRequest?.Invoke(this, EventArgs.Empty);
-        }
-
-        #endregion        
     }
 }

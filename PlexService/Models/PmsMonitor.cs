@@ -55,7 +55,7 @@ namespace PlexService.Models
         /// </summary>
         private bool _updating;
 
-        private readonly List<AuxiliaryApplicationMonitor> _auxAppMonitors;
+        public List<AuxiliaryApplicationMonitor> AuxAppMonitors { get; }
 
         #endregion
 
@@ -83,9 +83,10 @@ namespace PlexService.Models
         internal PmsMonitor(IHubContext<SocketServer> hubContext) {
             _hubContext = hubContext;
             State = PlexState.Stopped;
-            _auxAppMonitors = new List<AuxiliaryApplicationMonitor>();
+            AuxAppMonitors = new List<AuxiliaryApplicationMonitor>();
             var settings = SettingsHandler.Load();
-            settings.AuxiliaryApplications.ForEach(x => _auxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
+            settings.AuxiliaryApplications.ForEach(x => AuxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
+            Start();
             WatchLog();
         }
         #endregion
@@ -132,7 +133,7 @@ namespace PlexService.Models
             try {
                 pmsDataKey = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, architecture).OpenSubKey(keyName);
                 if (pmsDataKey != null) {
-                    var firstRun = (int) pmsDataKey.GetValue("FirstRun");
+                    var firstRun = (int) (pmsDataKey.GetValue("FirstRun") ?? 1);
                     Log.Debug("First run is: " + firstRun);
                     if (firstRun == 0) return;
                 }
@@ -176,7 +177,6 @@ namespace PlexService.Models
             if (string.IsNullOrEmpty(_executableFileName))
             {
                 Log.Information("Plex Media Server does not appear to be installed!");
-                OnPlexStop(EventArgs.Empty);
                 State = PlexState.Stopped;
             }
             else
@@ -204,11 +204,11 @@ namespace PlexService.Models
                 }
                 
                 //stop any running aux apps
-                _auxAppMonitors.ForEach(a => a.Stop());
-                _auxAppMonitors.Clear();
-                settings.AuxiliaryApplications.ForEach(x => _auxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
+                AuxAppMonitors.ForEach(a => a.Stop());
+                AuxAppMonitors.Clear();
+                settings.AuxiliaryApplications.ForEach(x => AuxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
                 //hook up the state change event for all the applications
-                _auxAppMonitors.AsParallel().ForAll(x => x.Start());
+                AuxAppMonitors.AsParallel().ForAll(x => x.Start());
             }
         }
 
@@ -340,7 +340,7 @@ namespace PlexService.Models
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Plex_Exited(object sender, EventArgs e)
+        private void Plex_Exited(object? sender, EventArgs e)
         {
             Log.Information("Plex Media Server has stopped!");
             //unsubscribe
@@ -468,12 +468,10 @@ namespace PlexService.Models
                 }
             }
             //kill each auxiliary process
-            _auxAppMonitors.ForEach(appMonitor =>
+            AuxAppMonitors.ForEach(appMonitor =>
             {
                 appMonitor.Stop();
             });
-
-            OnPlexStop(EventArgs.Empty);
         }
 
         /// <summary>
@@ -529,20 +527,22 @@ namespace PlexService.Models
 
         public bool IsAuxAppRunning(string name)
         {
-            var auxApp = _auxAppMonitors.FirstOrDefault(a => a.Name == name);
+            var auxApp = AuxAppMonitors.FirstOrDefault(a => a.Name == name);
             return auxApp is { Running: true };
         }
 
-        public void StartAuxApp(string name)
+        public bool StartAuxApp(string name)
         {
-            var auxApp = _auxAppMonitors.FirstOrDefault(a => a.Name == name);
+            var auxApp = AuxAppMonitors.FirstOrDefault(a => a.Name == name);
             if (auxApp is { Running: false }) auxApp.Start();
+            return auxApp?.Running ?? false;
         }
 
-        public void StopAuxApp(string name)
+        public bool StopAuxApp(string name)
         {
-            var auxApp = _auxAppMonitors.FirstOrDefault(a => a.Name == name);
+            var auxApp = AuxAppMonitors.FirstOrDefault(a => a.Name == name);
             if (auxApp is { Running: true }) auxApp.Stop();
+            return !auxApp?.Running ?? true;
         }
 
         #endregion
@@ -553,19 +553,19 @@ namespace PlexService.Models
         /// Returns the full path and filename of the plex media server executable
         /// </summary>
         /// <returns></returns>
-        private static string GetPlexExecutable()
-        {
+        private static string GetPlexExecutable() {
             var result = string.Empty;
 
             //first we will do a dirty check for a text file with the executable path in our log folder.
             //this is here to help anyone having issues and let them specify it manually themselves.
+            var locationFile = Path.Combine(PlexDirHelper.AppDataPath, "location.txt");
+
             if(!string.IsNullOrEmpty(PlexDirHelper.AppDataPath))
             {
-                var location = Path.Combine(PlexDirHelper.AppDataPath, "location.txt");
-                if (File.Exists(location))
+                if (File.Exists(locationFile))
                 {
                     string userSpecified;
-                    using (var sr = new StreamReader(location))
+                    using (var sr = new StreamReader(locationFile))
                     {
                         userSpecified = sr.ReadLine() ?? string.Empty;
                     }
@@ -592,98 +592,100 @@ namespace PlexService.Models
 
 
                 foreach (var location in possibleLocations.Where(File.Exists)) {
-                    result = location;
-                    break;
+                    File.WriteAllText(locationFile, location);
+                    return location;
                 }
             }
 
-            //so if we still can't find it, we need to do a more exhaustive check through the installer locations in the registry
-            if (string.IsNullOrEmpty(result))
+            //work out the os type (32 or 64) and set the registry view to suit. this is only a reliable check when this project is compiled to x86.
+            var is64Bit = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432"));
+
+            var architecture = RegistryView.Registry32;
+            if (is64Bit)
             {
-                //let's have a flag to break out of the loops below for faster execution, because this is nasty.
-                var resultFound = false;
+                architecture = RegistryView.Registry64;
+            }
 
-                //work out the os type (32 or 64) and set the registry view to suit. this is only a reliable check when this project is compiled to x86.
-                var is64Bit = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432"));
+            using var userDataKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, architecture).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Installer\UserData");
+            if (userDataKey == null) {
+                return result;
+            }
 
-                var architecture = RegistryView.Registry32;
-                if (is64Bit)
-                {
-                    architecture = RegistryView.Registry64;
+            foreach (var userKeyName in userDataKey.GetSubKeyNames()) {
+                using var userKey = userDataKey.OpenSubKey(userKeyName);
+                using var componentsKey = userKey?.OpenSubKey("Components");
+                if (componentsKey == null) {
+                    continue;
                 }
 
-                using var userDataKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, architecture).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Installer\UserData");
-                if(userDataKey != null)
-                {
-                    foreach (var userKeyName in userDataKey.GetSubKeyNames())
-                    {
-                        using (var userKey = userDataKey.OpenSubKey(userKeyName)) {
-                            using var componentsKey = userKey?.OpenSubKey("Components");
-                            if (componentsKey != null) // Make sure there are Assemblies
-                            {
-                                foreach (var guidKeyName in componentsKey.GetSubKeyNames()) {
-                                    using (var guidKey = componentsKey.OpenSubKey(guidKeyName)) {
-                                        if (guidKey != null) {
-                                            foreach (var valueName in guidKey.GetValueNames()) {
-                                                var value = guidKey.GetValue(valueName).ToString();
-                                                if (!value.ToLower().Contains("plex media server.exe")) {
-                                                    continue;
-                                                }
+                foreach (var guidKeyName in componentsKey.GetSubKeyNames()) {
+                    using var guidKey = componentsKey.OpenSubKey(guidKeyName);
+                    if (guidKey == null) {
+                        continue;
+                    }
 
-                                                //found it hooray!
-                                                result = value;
-                                                resultFound = true;
-                                                break;
-                                            }
-                                        }
-                                    }
+                    foreach (var valueName in guidKey.GetValueNames()) {
+                        var value = guidKey.GetValue(valueName)?.ToString() ?? string.Empty;
+                        if (!value.ToLower().Contains("plex media server.exe")) {
+                            continue;
+                        }
 
-                                    if (resultFound) //don't keep looping if we have a result
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (resultFound) //break this loop if we have a result
-                        {
-                            break;
-                        }
+                        //found it hooray!
+                        File.WriteAllText(locationFile, value);
+                        return value;
                     }
                 }
             }
+            
+            // Last but not least, try scanning *everything*
+            result = FindPlexExecutable();
+            if (!string.IsNullOrEmpty(result)) File.WriteAllText(locationFile, result);
             return result;
         }
 
+        private static string FindPlexExecutable() {
+            var drives = DriveInfo.GetDrives();
+            foreach (var drive in drives) {
+                if (drive.DriveType == DriveType.Fixed) {
+                    Log.Debug("Looking in drive " + drive.Name);
+                    var tgt = Scan(drive.RootDirectory.ToString());
+                    if (!string.IsNullOrEmpty(tgt)) return tgt;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string Scan(string path) {
+            try {
+                foreach (var file in Directory.EnumerateFiles(path,"Plex Media Server.exe")) {
+                    return file;
+                }
+            } catch {
+                // Ignored
+            }
+
+            try {
+                foreach (var dir in Directory.EnumerateDirectories(path)) {
+                    var res = Scan(dir);
+                    if (!string.IsNullOrEmpty(res)) return res;
+                }
+            } catch {
+                // Ignored
+            }
+
+            return string.Empty;
+        }
         
         
         #endregion
 
-        #region Events
-
-        /// <summary>
-        /// Stop Event
-        /// </summary>
-        internal event EventHandler? PlexStop;
-
-        /// <summary>
-        /// Method to stop the monitor
-        /// </summary>
-        /// <param name="data"></param>
-        private void OnPlexStop(EventArgs data)
-        {
-            PlexStop?.Invoke(this, data);
-        }
-
-        
         #region StateChange
 
         
         private void OnStateChange() {
             _hubContext.Clients.All.SendAsync("state", _state);
         }
-
-        #endregion
 
         #endregion
     }

@@ -1,4 +1,5 @@
-﻿using PlexServiceCommon;
+﻿using System.IO;
+using PlexServiceCommon;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,7 +12,7 @@ namespace PlexService
 	public static class Program {
 		public static void Main(string[] args) {
 			const string outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}]{Caller} {Message}{NewLine}{Exception}";
-			var logPath = PlexDirHelper.LogFile;
+			var logPath = Path.Combine(PlexDirHelper.AppDataPath, "PMSS.log");
 
 			var lc = new LoggerConfiguration()
 				.Enrich.WithCaller()
@@ -27,14 +28,14 @@ namespace PlexService
 			CreateHostBuilder(args, Log.Logger).Build().Run();
 			Log.CloseAndFlush();
 		}
+		
 		private static IHostBuilder CreateHostBuilder(string[] args, ILogger logger) {
 			var settings = SettingsHandler.Load();
 			var url = "http://localhost:" + settings.ServerPort;
-			Log.Debug("Using base URL: " + url);
 			return Host.CreateDefaultBuilder(args)
 				.UseSerilog(logger)
 				.ConfigureServices(services => {
-					services.AddSingleton<PlexMediaServerService>();
+					services.AddSingleton<IHostedService, PlexMediaServerService>();
 					services.AddSignalR();
 				})
 				.ConfigureWebHostDefaults(webBuilder => {
