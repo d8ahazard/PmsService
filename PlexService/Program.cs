@@ -1,38 +1,50 @@
-﻿using System.ServiceProcess;
-using PlexServiceCommon;
+﻿using PlexServiceCommon;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using PlexService.Models;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace PlexService
 {
-    static class Program
-    {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        static void Main(string[] args) {
-            LogWriter.Init();
+	public static class Program {
+		public static void Main(string[] args) {
+			const string outputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}]{Caller} {Message}{NewLine}{Exception}";
+			var logPath = PlexDirHelper.LogFile;
 
-#if (!DEBUG)
-            var servicesToRun = new ServiceBase[] 
-            { 
-                new PlexMediaServerService() 
-            };
-            ServiceBase.Run(servicesToRun);
-#else
-            PlexMediaServerService serviceCall = new();
-            serviceCall.OnDebug(args);
-            System.Console.ReadLine();
-#endif
+			var lc = new LoggerConfiguration()
+				.Enrich.WithCaller()
+				.MinimumLevel.Debug()
+				.WriteTo.Console(outputTemplate: outputTemplate, theme: SystemConsoleTheme.Literate)
+				//.Filter.ByExcluding(c => c.Properties["Caller"].ToString().Contains("SerilogLogger"))
+				.Enrich.FromLogContext()
+				.WriteTo.Async(a =>
+					a.File(logPath, rollingInterval: RollingInterval.Day, outputTemplate: outputTemplate));
 
-            //if (args.Length > 0 && args[0].ToUpper() == "DEBUG")
-            //{
-            //    System.Diagnostics.Debugger.Launch();
-            //}
-
-            //var servicesToRun = new ServiceBase[]
-            //{
-            //    new PlexMediaServerService()
-            //};
-            //ServiceBase.Run(servicesToRun);
-        }
+			
+			Log.Logger = lc.CreateLogger();
+			CreateHostBuilder(args, Log.Logger).Build().Run();
+			Log.CloseAndFlush();
+		}
+		private static IHostBuilder CreateHostBuilder(string[] args, ILogger logger) {
+			var settings = SettingsHandler.Load();
+			var url = "http://localhost:" + settings.ServerPort;
+			Log.Debug("Using base URL: " + url);
+			return Host.CreateDefaultBuilder(args)
+				.UseSerilog(logger)
+				.ConfigureServices(services => {
+					services.AddSingleton<PlexMediaServerService>();
+					services.AddSignalR();
+				})
+				.ConfigureWebHostDefaults(webBuilder => {
+					webBuilder.UseKestrel((_, kestrelOptions) =>
+					{
+						kestrelOptions.ListenAnyIP(settings.ServerPort);
+					});
+					webBuilder.UseUrls(url);
+					webBuilder.UseStartup<Startup>();
+				});
+		}
     }
 }
