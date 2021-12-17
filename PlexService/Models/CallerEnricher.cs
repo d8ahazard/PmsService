@@ -9,7 +9,7 @@ using Serilog.Events;
 
 #endregion
 
-namespace PlexServiceCommon {
+namespace PlexService.Models {
 	internal class CallerEnricher : ILogEventEnricher {
 		public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory) {
 			var skip = 2;
