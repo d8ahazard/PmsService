@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ControlzEx.Theming;
-using PlexServiceCommon.Interface;
+using Microsoft.AspNetCore.SignalR.Client;
 using Serilog.Events;
 
 namespace PlexServiceTray
@@ -14,9 +14,9 @@ namespace PlexServiceTray
     /// </summary>
     public partial class SettingsWindow {
         private bool _maximiseRequired;
-        private readonly ITrayInteraction? _plexService;
+        private readonly HubConnection _plexService;
         
-        public SettingsWindow(SettingsWindowViewModel settingsViewModel, ITrayInteraction plexService)
+        public SettingsWindow(SettingsWindowViewModel settingsViewModel, HubConnection plexService)
         {
             InitializeComponent();
             _plexService = plexService;
@@ -56,7 +56,7 @@ namespace PlexServiceTray
                 var svm = (SettingsWindowViewModel)DataContext;
                 svm.WorkingSettings.Theme = theme;
             } catch (Exception ex) {
-                _plexService?.LogMessage("Exception changing theme: " + ex.Message, LogEventLevel.Warning);
+                _plexService.SendAsync("logMessage","Exception changing theme: " + ex.Message, LogEventLevel.Warning);
             }
         }
     }

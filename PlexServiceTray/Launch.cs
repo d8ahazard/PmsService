@@ -5,13 +5,13 @@ using System.Diagnostics;
 
 namespace PlexServiceTray
 {
-    internal static class Program
+    public static class Launch
     {
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        public static void Main()
         {
             var appProcessName = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
             var runningProcesses = Process.GetProcessesByName(appProcessName);

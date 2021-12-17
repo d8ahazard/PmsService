@@ -6,6 +6,7 @@
         Updating,
         Stopped,
         Pending,
-        Stopping
+        Stopping,
+        Unknown
     }
 }

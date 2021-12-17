@@ -43,15 +43,7 @@ namespace PlexServiceTray
             DependencyProperty.Register("HelpLink", typeof(string), typeof(AboutWindow), new PropertyMetadata("https://github.com/cjmurph/PmsService/issues"));
 
 
-        public string HelpLinkDisplayText
-        {
-            get => (string)GetValue(HelpLinkDisplayTextProperty);
-            set => SetValue(HelpLinkDisplayTextProperty, value);
-        }
-
         // Using a DependencyProperty as the backing store for HelpLinkDisplayText.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty HelpLinkDisplayTextProperty =
-            DependencyProperty.Register("HelpLinkDisplayText", typeof(string), typeof(AboutWindow), new PropertyMetadata("PMS Service GitHub Project Issues"));
 
 
         public string File
@@ -65,15 +57,7 @@ namespace PlexServiceTray
             DependencyProperty.Register("File", typeof(string), typeof(AboutWindow), new PropertyMetadata(string.Empty));
 
 
-        public bool? DialogueResult
-        {
-            get => (bool?)GetValue(DialogueResultProperty);
-            set => SetValue(DialogueResultProperty, value);
-        }
-
         // Using a DependencyProperty as the backing store for DialogueResult.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty DialogueResultProperty =
-            DependencyProperty.Register("DialogueResult", typeof(bool?), typeof(AboutWindow), new PropertyMetadata(null));
 
 
         public AboutWindow(string theme)
@@ -120,12 +104,11 @@ namespace PlexServiceTray
 
         public static bool Shown {get; private set;}
 
-        public static bool? ShowAboutDialog(string theme)
+        public static void ShowAboutDialog(string theme)
         {
             Shown = true;
             var result = new AboutWindow(theme).ShowDialog();
             Shown = false;
-            return result;
         }
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
