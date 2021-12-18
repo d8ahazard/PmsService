@@ -49,7 +49,9 @@ namespace PlexServiceTray
         
         private void ThemeChanged(object sender, SelectionChangedEventArgs e) {
             try {
-                var item = (ComboBoxItem)e.AddedItems[0];
+                var added = e.AddedItems;
+                if (added.Count == 0) return;
+                var item = (ComboBoxItem) added[0]!;
                 var theme = (string) item.Content;
                 theme = theme.Replace(" ", ".");
                 ThemeManager.Current.ChangeTheme(this, theme);
