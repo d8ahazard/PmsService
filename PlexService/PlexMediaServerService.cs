@@ -5,15 +5,14 @@ using Microsoft.Extensions.Hosting;
 using PlexService.Hubs;
 using PlexService.Models;
 using PlexServiceCommon;
-using Serilog;
 
 namespace PlexService
 {
     /// <summary>
     /// Service that runs an instance of PmsMonitor to maintain an instance of Plex Media Server in session 0
     /// </summary>
-    public partial class PlexMediaServerService : BackgroundService {
-        public static PlexMediaServerService _instance;
+    public class PlexMediaServerService : BackgroundService {
+        public static PlexMediaServerService? Instance;
         public readonly PmsMonitor Monitor;
         
         public PlexState State => Monitor.State;
@@ -21,7 +20,7 @@ namespace PlexService
         public PlexMediaServerService(IHubContext<SocketServer> hubContext) {
             // HubContext is what we use to talk to any listening websocket clients
             Monitor = new PmsMonitor(hubContext);
-            _instance = this;
+            Instance = this;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
@@ -31,8 +30,8 @@ namespace PlexService
             Monitor.Stop();
         }
 
-        public static PlexMediaServerService GetInstance() {
-            return _instance;
+        public static PlexMediaServerService? GetInstance() {
+            return Instance;
         }
         
     }
