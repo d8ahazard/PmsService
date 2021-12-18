@@ -49,6 +49,13 @@ namespace PlexServiceCommon
         [DefaultValue(true)]            
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
         public bool AutoRemount { get; set; }
+        
+        /// <summary>
+        /// How long to show notifications for
+        /// </summary>
+        [DefaultValue(2)]            
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public int NotifyTime { get; set; }
 
         /// <summary>
         /// How many times to try re-mounting shares before giving up
@@ -84,6 +91,7 @@ namespace PlexServiceCommon
             DriveMaps = new List<DriveMap>();
             //set a default theme value
             Theme = "Dark.Red";
+            NotifyTime = 2;
         }
 
     }
