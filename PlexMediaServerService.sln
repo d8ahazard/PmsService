@@ -11,8 +11,6 @@ Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PlexServiceInstaller", "Ple
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexServiceCommon", "PlexServiceCommon\PlexServiceCommon.csproj", "{C5E8CEE5-EAE6-4337-9CDF-55C907FF93C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlexServiceTrayWPF", "WpfTray\PlexServiceTrayWPF\PlexServiceTrayWPF.csproj", "{0FE0CA30-47C1-47B7-8518-33137E2336B9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
