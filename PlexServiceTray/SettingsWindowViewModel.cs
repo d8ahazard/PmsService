@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Collections.ObjectModel;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -8,7 +7,7 @@ using PlexServiceCommon;
 namespace PlexServiceTray
 {
     public class SettingsWindowViewModel:ObservableObject {
-        private HubConnection _connection;
+        private readonly HubConnection _connection;
         /// <summary>
         /// The server endpoint port
         /// </summary>
@@ -165,13 +164,13 @@ namespace PlexServiceTray
         public ObservableCollection<DriveMapViewModel> DriveMaps
         {
             get => _driveMaps;
-            set
-            {
-                if (_driveMaps != value)
-                {
-                    _driveMaps = value;
-                    OnPropertyChanged(nameof(DriveMaps));
+            set {
+                if (_driveMaps == value) {
+                    return;
                 }
+
+                _driveMaps = value;
+                OnPropertyChanged(nameof(DriveMaps));
             }
         }
 
@@ -243,7 +242,7 @@ namespace PlexServiceTray
         /// <summary>
         /// Use one settings instance for the life of the window.
         /// </summary>
-        public Settings WorkingSettings { get; }
+        public Settings WorkingSettings { get; set; }
 
         public SettingsWindowViewModel(HubConnection connection, Dictionary<string, bool> states,
             Settings settings) {
