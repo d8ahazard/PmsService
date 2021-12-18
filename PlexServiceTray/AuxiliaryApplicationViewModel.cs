@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using PlexServiceCommon;
 using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using PlexServiceTray.Validation;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.SignalR.Client;
-using Serilog;
 
 namespace PlexServiceTray {
     public class AuxiliaryApplicationViewModel : ObservableObject {
@@ -74,7 +72,7 @@ namespace PlexServiceTray {
             }
         }
 
-        public bool Running { get; set; }
+        private bool _running;
 
         public string Url {
             get => _auxApplication.Url;
@@ -106,7 +104,7 @@ namespace PlexServiceTray {
             SettingsWindowViewModel context) {
             _auxApplication = auxApplication;
             _connection = hubConnection;
-            Running = states.ContainsKey(auxApplication.Name) && states[auxApplication.Name];
+            _running = states.ContainsKey(auxApplication.Name) && states[auxApplication.Name];
             ValidationContext = context;
             IsExpanded = false;
         }
@@ -117,7 +115,7 @@ namespace PlexServiceTray {
 
         #region BrowseCommand
 
-        RelayCommand _browseCommand;
+        RelayCommand? _browseCommand;
         public RelayCommand BrowseCommand => _browseCommand ??= new RelayCommand(OnBrowse);
 
         private void OnBrowse(object parameter) {
@@ -130,7 +128,7 @@ namespace PlexServiceTray {
 
             FilePath = ofd.FileName;
             if (string.IsNullOrEmpty(WorkingFolder)) {
-                WorkingFolder = System.IO.Path.GetDirectoryName(FilePath);
+                WorkingFolder = System.IO.Path.GetDirectoryName(FilePath) ?? string.Empty;
             }
         }
 
@@ -138,7 +136,7 @@ namespace PlexServiceTray {
 
         #region BrowseFolderCommand
 
-        RelayCommand _browseFolderCommand;
+        RelayCommand? _browseFolderCommand;
         public RelayCommand BrowseFolderCommand => _browseFolderCommand ??= new RelayCommand(OnBrowseFolder);
 
         private void OnBrowseFolder(object parameter) {
@@ -159,42 +157,44 @@ namespace PlexServiceTray {
 
         #region StartCommand
 
-        RelayCommand _startCommand;
+        RelayCommand? _startCommand;
         public RelayCommand StartCommand => _startCommand ??= new RelayCommand(OnStart, CanStart);
 
         private bool CanStart(object parameter) {
-            return !Running;
+            return !_running;
         }
 
         private void OnStart(object parameter) {
-            if (_connection.State is HubConnectionState.Connected && !Running) {
+            if (_connection.State is HubConnectionState.Connected && !_running) {
                 _connection.SendAsync("startAuxApp", Name);
-                Running = true;
+                _running = true;
             }
         }
 
         #endregion StartCommand
 
         #region StopCommand
-        RelayCommand _stopCommand;
+        RelayCommand? _stopCommand;
         public RelayCommand StopCommand => _stopCommand ??= new RelayCommand(OnStop, CanStop);
 
         private bool CanStop(object parameter) {
-            return Running;
+            return _running;
         }
 
         private void OnStop(object parameter) {
-            if (_connection.State is HubConnectionState.Connected && Running) {
-                _connection.SendAsync("stopAuxApp", Name);
-                Running = false;
+            if (_connection.State is not HubConnectionState.Connected || !_running) {
+                return;
             }
+
+            _connection.SendAsync("stopAuxApp", Name);
+            _running = false;
         }
 
         #endregion StopCommand
 
         #region GoToUrlCommand
 
-        RelayCommand _goToUrlCommand;
+        RelayCommand? _goToUrlCommand;
         public RelayCommand GoToUrlCommand => _goToUrlCommand ??= new RelayCommand(OnGoToUrl, CanGoToUrl);
 
         private bool CanGoToUrl(object parameter) {
