@@ -22,28 +22,6 @@ namespace PlexService {
 			services.AddControllers()
 				.AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = null; })
 				.AddNewtonsoftJson();
-			// services.AddSwaggerGen(c => {
-			// 	var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-			// 	var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-			// 	c.IncludeXmlComments(xmlPath);
-			// 	c.UseOneOfForPolymorphism();
-			// 	c.EnableAnnotations(true, true);
-			// 	c.SchemaFilter<DescribeEnumMembers>(xmlPath);
-			// 	c.SwaggerDoc("v1.3", new OpenApiInfo {
-			// 		Version = "v1.3",
-			// 		Title = "Glimmr Web API",
-			// 		Description = "A simple example ASP.NET Core Web API",
-			// 		Contact = new OpenApiContact {
-			// 			Name = "d8ahazard",
-			// 			Email = "donate.to.digitalhigh@gmail.com",
-			// 			Url = new Uri("https://facebook.com/GlimmrTV")
-			// 		},
-			// 		License = new OpenApiLicense {
-			// 			Name = "GPL3.0",
-			// 			Url = new Uri("https://github.com/d8ahazard/glimmr/blob/master/COPYING")
-			// 		}
-			// 	});
-			// });
 			var settings = new JsonSerializerSettings { ContractResolver = new SignalRContractResolver() };
 			var serializer = JsonSerializer.Create(settings);
 			services.AddSingleton(serializer);
