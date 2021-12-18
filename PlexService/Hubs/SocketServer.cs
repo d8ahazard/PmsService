@@ -13,15 +13,14 @@ using Serilog.Events;
 
 namespace PlexService.Hubs {
 	public class SocketServer : Hub {
-		private readonly PlexMediaServerService _ps;
+		private readonly PlexMediaServerService? _ps;
 		
 
 		public SocketServer() {
-			_ps = PlexMediaServerService._instance;
+			_ps = PlexMediaServerService.Instance;
 		}
 
-
-		public Task SetSettings(Settings settings) {
+		public void SetSettings(Settings settings) {
 			try {
 				Log.Information("Saving settings.");
 				SettingsHandler.Save(settings);
@@ -29,72 +28,39 @@ namespace PlexService.Hubs {
 			} catch (Exception e) {
 				Log.Warning("Exception caught on settings save: " + e.Message + " at " + e.StackTrace);
 			}
-
-			return Task.CompletedTask;
-		}
-
-		public async Task<Settings?> GetSettings() {
-			Log.Debug("Settings requested...");
-			try {
-				await Task.FromResult(true);
-				var res = SettingsHandler.Load();
-				Log.Debug("Returning...");
-				return res;
-			} catch (Exception e) {
-				Log.Warning("Exception getting/sending settings: " + e.Message);
-			}
-
-			return null;
-		}
-
-		public PlexState GetState() {
-			Log.Debug("State requested...");
-			try {
-				return _ps.State;
-			} catch (Exception e) {
-				Log.Warning("Exceptions sending state: " + e.Message);
-			}
-
-			return PlexState.Stopped;
 		}
 
 		public Task StopPlex() {
-			_ps.Monitor.Stop();
+			_ps?.Monitor.Stop();
 			return Task.CompletedTask;
 		}
 		
 		public Task StartPlex() {
-			_ps.Monitor.Start();
+			_ps?.Monitor.Start();
 			return Task.CompletedTask;
 		}
 		
-		public bool StartAuxApp(string name) {
-			return _ps.Monitor.StartAuxApp(name);
+		public void StartAuxApp(string name) {
+			if (_ps == null) return;
+			Clients.All.SendAsync("auxState", new Tuple<string, bool>(name, _ps.Monitor.StartAuxApp(name)));
 		}
 		
-		public bool StopAuxApp(string name) {
-			return _ps.Monitor.StopAuxApp(name);
+		public void StopAuxApp(string name) {
+			if (_ps == null) return;
+			Clients.All.SendAsync("auxState", new Tuple<string, bool>(name, !_ps.Monitor.StopAuxApp(name)));
 		}
-		
 
 		public Task LogMessage(string message, LogEventLevel level) {
 			Log.Write(level, message);
 			return Task.CompletedTask;
 		}
-
-		public string GetLog() {
-			return LogWriter.Read().Result;
-		}
-
-		public bool IsAuxAppRunning(string name) {
-			var res = _ps.Monitor.IsAuxAppRunning(name);
-			Log.Debug("Aux app check? " + res);
-			return res;
-		}
-
+		
 		public override async Task OnConnectedAsync() {
 			try {
 				Log.Information("Client Connected: " + Context.ConnectionId);
+				if (_ps == null) return;
+				// #Todo: Create one single object that holds all this stuff so we can 
+				// simplify sending data to clients?
 				await Clients.Caller.SendAsync("settings", SettingsHandler.Load());
 				await Clients.Caller.SendAsync("state", _ps.State);
 				await Clients.Caller.SendAsync("pmsPath", PlexDirHelper.PmsDataPath);
