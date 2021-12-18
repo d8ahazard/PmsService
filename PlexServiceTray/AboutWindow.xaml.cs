@@ -76,21 +76,13 @@ namespace PlexServiceTray
         }
 
         #region OkCommand
-        RelayCommand _okCommand;
-        public RelayCommand OkCommand
+        RelayCommand? _okCommand;
+        public RelayCommand? OkCommand
         {
-            get
-            {
-                if (_okCommand == null)
-                {
-                    _okCommand = new RelayCommand(p => OnOk(p), p => CanOk(p));
-                }
-
-                return _okCommand;
-            }
+            get { return _okCommand ??= new RelayCommand(OnOk, CanOk); }
         }
 
-        private bool CanOk(object parameter)
+        private static bool CanOk(object parameter)
         {
             return true;
         }
@@ -107,7 +99,7 @@ namespace PlexServiceTray
         public static void ShowAboutDialog(string theme)
         {
             Shown = true;
-            var result = new AboutWindow(theme).ShowDialog();
+            new AboutWindow(theme).ShowDialog();
             Shown = false;
         }
 
