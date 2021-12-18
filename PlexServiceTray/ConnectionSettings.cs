@@ -90,17 +90,15 @@ namespace PlexServiceTray
         internal static ConnectionSettings Load()
         {
             var filePath = GetSettingsFile();
-            ConnectionSettings settings;
             if (File.Exists(filePath)) {
                 using var sr = new StreamReader(filePath);
                 var rawSettings = sr.ReadToEnd();
-                settings = JsonConvert.DeserializeObject<ConnectionSettings>(rawSettings);
+                var read = JsonConvert.DeserializeObject<ConnectionSettings>(rawSettings);
+                if (read != null) return read;
             }
-            else
-            {
-                settings = new ConnectionSettings();
-                settings.Save();
-            }
+            
+            var settings = new ConnectionSettings();
+            settings.Save();
             return settings;
         }
 
