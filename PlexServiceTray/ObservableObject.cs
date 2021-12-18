@@ -40,7 +40,7 @@ namespace PlexServiceTray
 
         #region PropertyChanged
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>
         /// This is required to create on property changed events
         /// </summary>
@@ -48,8 +48,7 @@ namespace PlexServiceTray
         protected void OnPropertyChanged(string name)
         {
             var handler = PropertyChanged;
-            if(handler != null)
-                handler(this, new PropertyChangedEventArgs(name));
+            handler?.Invoke(this, new PropertyChangedEventArgs(name));
             if (Validators.ContainsKey(name))
                 UpdateError();
         }
@@ -58,7 +57,7 @@ namespace PlexServiceTray
 
         #region Data Validation
 
-        private Dictionary<string, object> PropertyGetters
+        private Dictionary<string, object?> PropertyGetters
         {
             get
             {
@@ -79,14 +78,12 @@ namespace PlexServiceTray
             return (ValidationAttribute[])property.GetCustomAttributes(typeof(ValidationAttribute), true);
         }
 
-        private object GetValueGetter(PropertyInfo property)
+        private object? GetValueGetter(PropertyInfo property)
         {
             return property.GetValue(this, null);
         }
 
-        private string _error;
-
-        public string Error => _error;
+        public string? Error { get; private set; }
 
         private void UpdateError()
         {
@@ -94,7 +91,7 @@ namespace PlexServiceTray
                          from v in i.Value
                          where !Validate(v, PropertyGetters[i.Key])
                          select v.ErrorMessage;
-            _error = string.Join(Environment.NewLine, errors.ToArray());
+            Error = string.Join(Environment.NewLine, errors.ToArray());
             OnPropertyChanged(nameof(Error));
         }
 
