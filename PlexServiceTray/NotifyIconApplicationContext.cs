@@ -35,6 +35,7 @@ namespace PlexServiceTray
         private string _logPath = string.Empty;
         private readonly ConnectionSettings _connectionSettings;
         private Dictionary<string, bool> _states;
+        private SettingsWindowViewModel? _viewModel;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -85,19 +86,25 @@ namespace PlexServiceTray
                     
             _connection.On<Settings>("settings", Callback_SettingChange);
             _connection.On<PlexState>("state", Callback_StateChange);
-            _connection.On<Settings>("Settings", Callback_SettingChange);
-            _connection.On<PlexState>("State", Callback_StateChange);
             _connection.On<string>("pmsPath", Callback_PmsPathChange);
             _connection.On<string>("logPath", Callback_PmsLogChange);
-            _connection.On<string>("PmsPath", Callback_PmsPathChange);
-            _connection.On<string>("logPath", Callback_PmsLogChange);
             _connection.On<Dictionary<string, bool>>("states", Callback_States);
+            _connection.On<Tuple<string, bool>>("auxState", Callback_AuxState);
             Connect().ConfigureAwait(true);
             DrawMenu().ConfigureAwait(true);
         }
 
-        private void Callback_States(Dictionary<string, bool> states) {
+        private async Task Callback_AuxState(Tuple<string, bool> state) {
+            var (item1, item2) = state;
+            _states[item1] = item2;
+            await DrawMenu();
+            var sString = item2 ? "started" : "stopped";
+            _notifyIcon.ShowBalloonTip(1000, "Plex Service", $"{item1} {sString}.", ToolTipIcon.Info);
+        }
+
+        private async Task Callback_States(Dictionary<string, bool> states) {
             _states = states;
+            await DrawMenu();
         }
 
 
@@ -158,6 +165,9 @@ namespace PlexServiceTray
 
         private async Task Callback_SettingChange(Settings settings) {
             _settings = settings;
+            if (_viewModel != null) {
+                _viewModel.WorkingSettings = _settings;
+            }
             await DrawMenu();
             Logger("Settings update fired.");
         }
@@ -184,13 +194,17 @@ namespace PlexServiceTray
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void NotifyIcon_Click(object? sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                Log.Debug("Notify icon right clicked?");
-                _notifyIcon.ContextMenuStrip.Show();
+        private void NotifyIcon_Click(object? sender, MouseEventArgs e) {
+            if (e.Button != MouseButtons.Right) {
+                return;
             }
+
+            Log.Debug("Notify icon right clicked?");
+            var foo = e.Location;
+            var target = _notifyIcon.ContextMenuStrip.PointToScreen(foo);
+            target.X -= _notifyIcon.ContextMenuStrip.Height + 10;
+            target.Y -= _notifyIcon.ContextMenuStrip.Width + 10;
+            _notifyIcon.ContextMenuStrip.Show(target);
         }
 
         /// <summary>
@@ -232,30 +246,32 @@ namespace PlexServiceTray
             //Don't continue if teh service or settings are null
             if (_connection.State != HubConnectionState.Connected || _settings is null) return;
 
-            var viewModel = new SettingsWindowViewModel(_connection, _states, _settings);
-            _settingsWindow = new SettingsWindow(viewModel, _connection);
+            _viewModel = new SettingsWindowViewModel(_connection, _states, _settings);
+            _settingsWindow = new SettingsWindow(_viewModel, _connection);
             if (_settingsWindow.ShowDialog() == true)
             {
                 try
                 {
-                    SetSettings(viewModel.WorkingSettings);
-                    //GetStatus();
+                    Log.Debug("Saving settings...");
+                    SetSettings(_viewModel.WorkingSettings);
+                    Log.Debug("Done.");
                 }
                 catch(Exception ex)
                 {
                     Logger("Exception saving settings: " + ex.Message, LogEventLevel.Warning);
                     System.Windows.MessageBox.Show("Unable to save settings" + Environment.NewLine + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 }     
-                var oldPort = viewModel.WorkingSettings.ServerPort;
+                var oldPort = _settings.ServerPort;
 
                 //The only setting that would require a restart of the service is the listening port.
                 //If that gets changed notify the user to restart the service from the service snap in
-                if (viewModel.WorkingSettings.ServerPort != oldPort)
+                if (_viewModel.WorkingSettings.ServerPort != oldPort)
                 {
                     System.Windows.MessageBox.Show("Server port changed! You will need to restart the service from the services snap in for the change to be applied", "Settings changed!", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             _settingsWindow = null;
+            _viewModel = null;
         }
 
         // Automagically re-draw our context menu on state/settings changes, versus trying to do it when we 
@@ -299,18 +315,30 @@ namespace PlexServiceTray
                     if (auxAppsToLink.Count > 0) {
                         var auxAppsItem = new ToolStripMenuItem
                         {
-                            Text = "Auxiliary Applications"
+                            Text = "Auxiliary Applications",
+                            ForeColor = Color.FromArgb(232, 234, 237),
+                            BackColor = Color.FromArgb(41, 42, 45)
                         };
                         auxAppsToLink.ForEach(aux => {
-                            auxAppsItem.DropDownItems.Add(aux.Name, null, (_, _) => {
+                            Log.Debug("Adding app: " + aux.Name);
+                            var auxItem = new ToolStripMenuItem(aux.Name, null, (_, _) => {
                                 try {
-                                    Process.Start("explorer", aux.Url);
+                                    var url = aux.Url;
+                                    url = url.Replace("localhost", _connectionSettings.ServerAddress);
+                                    url = url.Replace("127.0.0.1", _connectionSettings.ServerAddress);
+                                    url = url.Replace("0.0.0.0", _connectionSettings.ServerAddress);
+                                    Process.Start("explorer", url);
                                 } catch (Exception ex) {
                                     Logger("Aux exception: " + ex.Message, LogEventLevel.Warning);
                                     System.Windows.Forms.MessageBox.Show(ex.Message, "Whoops!", MessageBoxButtons.OK,
                                         MessageBoxIcon.Error);
                                 }
                             });
+                            // If the aux app isn't running, don't enable click.
+                            auxItem.Enabled = _states.ContainsKey(aux.Name) && _states[aux.Name];
+                            auxItem.ForeColor = Color.FromArgb(232, 234, 237);
+                            auxItem.BackColor = Color.FromArgb(41, 42, 45);
+                            auxAppsItem.DropDownItems.Add(auxItem);
                         });
                         _notifyIcon.ContextMenuStrip.Items.Add(auxAppsItem);
                         _notifyIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
@@ -345,35 +373,9 @@ namespace PlexServiceTray
 
         private void SetSettings(Settings viewModelWorkingSettings) {
             try {
-                _connection.InvokeAsync<bool>("setSettings", viewModelWorkingSettings);
+                _connection.SendAsync("setSettings", viewModelWorkingSettings);
             } catch (Exception e) {
                 Logger("Exception saving settings: " + e.Message);
-            }
-        }
-
-        private bool IsAuxAppRunning(string requesterName) {
-            try {
-                return _connection.InvokeAsync<bool>("isAuxAppRunning", requesterName).Result;
-            } catch {
-                return false;
-            }
-        }
-
-        private bool StopAuxApp(string requesterName) {
-            try {
-                return _connection.InvokeAsync<bool>("startAuxApp", requesterName).Result;
-            } catch (Exception e) {
-                Logger("exception stopping aux app: " + e.Message, LogEventLevel.Warning);
-                return false;
-            }
-        }
-
-        private bool StartAuxApp(string requesterName) {
-            try {
-                return _connection.InvokeAsync<bool>("startAuxApp", requesterName).Result;
-            } catch (Exception e) {
-                Logger("exception starting aux app: " + e.Message, LogEventLevel.Warning);
-                return false;
             }
         }
 
