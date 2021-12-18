@@ -19,7 +19,7 @@ namespace PlexService.Models
     public class PmsMonitor
     {
         #region static strings
-        private IHubContext<SocketServer> _hubContext;
+        private readonly IHubContext<SocketServer> _hubContext;
         //Process names
         private static readonly string _plexName = "Plex Media Server";
         //List of processes spawned by plex that we need to get rid of
@@ -385,7 +385,7 @@ namespace PlexService.Models
         /// <summary>
         /// Start a new/get a handle on existing Plex process
         /// </summary>
-        public void StartPlex()
+        private void StartPlex()
         {
             State = PlexState.Pending;
             //always try to get rid of the plex auto start registry entry
@@ -416,7 +416,7 @@ namespace PlexService.Models
                     };
                     //check version to see if we can use the startup argument
                     var plexVersion = FileVersionInfo.GetVersionInfo(_executableFileName).FileVersion;
-                    var v = new Version(plexVersion);
+                    var v = new Version(plexVersion ?? string.Empty);
                     var minimumVersion = new Version("0.9.8.12");
                     if (v.CompareTo(minimumVersion) == -1)
                     {
@@ -455,7 +455,7 @@ namespace PlexService.Models
         /// <summary>
         /// Kill the plex process
         /// </summary>
-        public void EndPlex()
+        private void EndPlex()
         {
             if (_plex != null)
             {
