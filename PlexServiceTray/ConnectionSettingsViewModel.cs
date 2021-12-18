@@ -1,7 +1,4 @@
-﻿using System.ComponentModel;
-using System.Windows.Input;
-
-namespace PlexServiceTray
+﻿namespace PlexServiceTray
 {
     /// <summary>
     /// View model class for connection settings window
@@ -53,13 +50,15 @@ namespace PlexServiceTray
         }
 
         #region CancelCommand
-        RelayCommand _cancelCommand;
-        public RelayCommand CancelCommand => _cancelCommand ??= new RelayCommand((p) => DialogResult = true);
+
+        private RelayCommand? _cancelCommand;
+        public RelayCommand CancelCommand => _cancelCommand ??= new RelayCommand(_ => DialogResult = true);
 
         #endregion CancelCommand
 
         #region SaveCommand
-        RelayCommand _saveCommand;
+
+        private RelayCommand? _saveCommand;
         public RelayCommand SaveCommand => _saveCommand ??= new RelayCommand(OnSave, CanSave);
 
         private bool CanSave(object parameter)
