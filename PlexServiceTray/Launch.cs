@@ -3,7 +3,6 @@ using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
 using PlexServiceCommon;
-using PlexServiceCommon.Logging;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 
