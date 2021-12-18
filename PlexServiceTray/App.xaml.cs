@@ -1,19 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms;
 using PlexServiceCommon;
 using PlexServiceCommon.Logging;
-using PlexServiceTray;
 using Serilog;
-using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
 
 namespace PlexServiceTray
 {
@@ -39,21 +30,22 @@ namespace PlexServiceTray
 			
             Log.Logger = lc.CreateLogger();
             //Log.CloseAndFlush();
-            Log.Debug("WTF??");
-            //Console.WriteLine("No, seriously.");
-
-            // var appProcessName = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
-            // var runningProcesses = Process.GetProcessesByName(appProcessName);
-            // if (runningProcesses.Length > 1) {
-            //     return;
-            // }
+            var app = Process.GetCurrentProcess().MainModule;
+            if (app != null) {
+                var file = app.FileName;
+                var appProcessName = Path.GetFileNameWithoutExtension(file);
+                var runningProcesses = Process.GetProcessesByName(appProcessName);
+                if (runningProcesses.Length > 1) {
+                    return;
+                }
+            }
+            
             try
             {
-                Log.Debug("Logging works...");
                 var applicationContext = new NotifyIconApplicationContext();
                 applicationContext.Connect().ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //
             }
