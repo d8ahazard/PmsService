@@ -8,7 +8,9 @@
     <ProductName>PlexServiceTray</ProductName>
     <LangVersion>latestmajor</LangVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <StartupObject>PlexServiceTray.Launch</StartupObject>  
+    <StartupObject>PlexServiceTray.Launch</StartupObject>
+        <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <IsPackable>false</IsPackable>  
   </PropertyGroup>
     
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
