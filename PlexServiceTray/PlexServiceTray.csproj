@@ -40,6 +40,9 @@
     <UseWindowsForms>False</UseWindowsForms>
   </PropertyGroup>
   <ItemGroup>
+<PackageReference Include="Meziantou.Framework.Win32.CredentialManager">
+  <Version>1.4.2</Version>
+</PackageReference>
 <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

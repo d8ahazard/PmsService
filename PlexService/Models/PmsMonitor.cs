@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Win32;
 using PlexService.Hubs;
@@ -86,7 +88,7 @@ namespace PlexService.Models
             AuxAppMonitors = new List<AuxiliaryApplicationMonitor>();
             var settings = SettingsHandler.Load();
             settings.AuxiliaryApplications.ForEach(x => AuxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
-            Start();
+            Start().ConfigureAwait(false);
             WatchLog();
         }
         #endregion
@@ -170,7 +172,7 @@ namespace PlexService.Models
         /// <summary>
         /// Start monitoring plex
         /// </summary>
-        public void Start()
+        public async Task Start()
         {
             //Find the plex executable
             _executableFileName = GetPlexExecutable();
@@ -179,101 +181,99 @@ namespace PlexService.Models
                 Log.Information("Plex Media Server does not appear to be installed!");
                 State = PlexState.Stopped;
             }
-            else
-            {
-                //load the settings
-                var settings = SettingsHandler.Load();
-
-                Log.Information("Plex executable found at " + _executableFileName);
-                
-                //map network drives
-                var drivesMapped = true;
-                if (settings.DriveMaps.Count > 0) {
-                    Log.Information("Mapping Network Drives");
-
-                    drivesMapped = settings.DriveMaps.All(toMap => TryMap(toMap, settings));
-                }
-
-                if (!drivesMapped && !settings.StartPlexOnMountFail) 
-                {
-                    Log.Warning("One or more drive mappings failed and settings are configured to *not* start Plex on mount failure. Please check your drives and try again.");
-                } 
-                else 
-                {
-                    StartPlex();
-                }
-                
-                //stop any running aux apps
-                AuxAppMonitors.ForEach(a => a.Stop());
-                AuxAppMonitors.Clear();
-                settings.AuxiliaryApplications.ForEach(x => AuxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
-                //hook up the state change event for all the applications
-                AuxAppMonitors.AsParallel().ForAll(x => x.Start());
+            else {
+                Log.Debug("Initializing.");
+                await Initialize().ConfigureAwait(false);
             }
+        }
+
+        private async Task Initialize() {
+            //load the settings
+            var settings = SettingsHandler.Load();
+            Log.Information("Plex executable found at " + _executableFileName);
+                
+            //map network drives
+            var drivesMapped = true;
+            if (settings.DriveMaps.Count > 0) {
+                Log.Information("Mapping Network Drives");
+                drivesMapped = settings.DriveMaps.All(toMap => TryMap(toMap, settings).Result);
+            }
+
+            if (!drivesMapped && !settings.StartPlexOnMountFail) 
+            {
+                Log.Warning("One or more drive mappings failed and settings are configured to *not* start Plex on mount failure. Please check your drives and try again.");
+            } 
+            else 
+            {
+                StartPlex();
+            }
+                
+            //stop any running aux apps
+            AuxAppMonitors.ForEach(a => a.Stop());
+            AuxAppMonitors.Clear();
+            settings.AuxiliaryApplications.ForEach(x => AuxAppMonitors.Add(new AuxiliaryApplicationMonitor(x)));
+            //hook up the state change event for all the applications
+            AuxAppMonitors.AsParallel().ForAll(x => x.Start());
+            await Task.FromResult(true);
         }
 
         private void WatchLog() {
             var path = PlexDirHelper.PmsDataPath;
-            
-            if (string.IsNullOrEmpty(path)) return;
 
-            path = Path.Combine(path, "PLex Media Server" , "Logs");
+            if (string.IsNullOrEmpty(path)) {
+                Log.Debug("Unable to locate Plex Media Server data directory.");
+                return;
+            }
+
+            path = Path.Combine(path, "Plex Media Server" , "Logs");
             Log.Debug("PMS Log Path: " + path);
+            if (!Directory.Exists(path)) {
+                Log.Warning("Plex Media Server log directory does not exist.");
+            }
             try 
             {
                 var watcher = new FileSystemWatcher(path,"Plex Update Service Launcher.log");
-                watcher.NotifyFilter = NotifyFilters.LastWrite;
                 watcher.EnableRaisingEvents = true;
                 watcher.Changed += OnChanged;
             }
             catch (Exception e) 
             {
-                Log.Warning("Exception: " + e.Message);
+                Log.Warning("Exception Creating File Watcher: " + e.Message);
             }
         }
         
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
-            if (e.ChangeType != WatcherChangeTypes.Changed)
-            {
-                return;
-            }
-            var read = false;
-            var lastLine = string.Empty;
-            // Ensure the file isn't in use when we try to read it.
-            while (!read) 
-            {
-                try 
-                {
-                    lastLine = File.ReadLines(e.FullPath).ToArray().Last();
-                    read = true;
-                } 
-                catch (Exception) 
-                {
-                    // Ignored, we know what the problem is
-                }
-            }
-            // Only set _updating once.
-            if (lastLine != null && lastLine.Contains("Closing Plex Media Server Processes") && !_updating) 
-            {
-                Log.Debug("MATCH");
-                State = PlexState.Updating;
-                Log.Information("Plex update started.");
-                _updating = true;
-                return;
-            }
-
-            // And only unset it if it's already been set.
-            if (lastLine != null && (!lastLine.Contains("Install: Success") || !_updating)) 
-            {
-                return;
-            }
-            _updating = false;
-            Log.Information("PMS update is complete, killing and restarting process.");
-            Start();
+            Log.Debug("Changed: " + e.FullPath);
+            _updating = true;
+            State = PlexState.Updating;
+            DelayStart().ConfigureAwait(false);
         }
 
-        private static bool TryMap(DriveMap map, Settings settings)
+        private async Task DelayStart() {
+            var started = false;
+            var count = 0;
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            while (!started && count < 120) {
+                var plexProc = Process.GetProcessesByName(_plexName).FirstOrDefault();
+                if (plexProc != null) {
+                    started = true;
+                }
+
+                count++;
+                await Task.Delay(TimeSpan.FromSeconds(1));
+
+            }
+
+            if (_updating) {
+                _updating = false;
+                Log.Information($"PMS update is complete after {count} seconds, Trying to re-attach to process.");
+                await Start();    
+            }
+            
+        }
+
+        private static async Task<bool> TryMap(DriveMap map, Settings settings)
         {
             var count = settings.AutoRemount ? settings.AutoRemountCount : 1;
 
@@ -281,7 +281,7 @@ namespace PlexService.Models
             {
                 try
                 {
-                    map.MapDrive(true);
+                    await map.MapDrive(true);
                     Log.Information($"Map share {map.ShareName} to letter '{map.DriveLetter}' successful");
                     return true;
                 }
@@ -324,7 +324,7 @@ namespace PlexService.Models
             Stop();
             State = PlexState.Pending;
             var autoEvent = new AutoResetEvent(false);
-            var t = new Timer(_ => { Start(); autoEvent.Set(); }, null, delay, Timeout.Infinite);
+            var t = new Timer(_ => { Start().ConfigureAwait(false); autoEvent.Set(); }, null, delay, Timeout.Infinite);
             autoEvent.WaitOne();
             t.Dispose();
         }
@@ -345,6 +345,13 @@ namespace PlexService.Models
             Log.Information("Plex Media Server has stopped!");
             //unsubscribe
             if (_plex != null) _plex.Exited -= Plex_Exited;
+            
+            if (_updating) {
+                State = PlexState.Stopped;
+                Log.Information("Plex is updating, waiting for finish before re-starting.");
+                return;
+            }
+
 
             //kill the supporting processes.
             KillSupportingProcesses();
@@ -359,15 +366,10 @@ namespace PlexService.Models
             var settings = SettingsHandler.Load();
             if (State != PlexState.Stopping && settings.AutoRestart)
             {
-                if (_updating) {
-                    State = PlexState.Stopped;
-                    Log.Information("Plex is updating, waiting for finish before re-starting.");
-                    return;
-                }
                 Log.Information($"Waiting {settings.RestartDelay} seconds before re-starting the Plex process.");
                 State = PlexState.Pending;
                 var autoEvent = new AutoResetEvent(false);
-                var t = new Timer(_ => { Start(); autoEvent.Set(); }, null, settings.RestartDelay * 1000, Timeout.Infinite);
+                var t = new Timer(_ => { Start().ConfigureAwait(false); autoEvent.Set(); }, null, settings.RestartDelay * 1000, Timeout.Infinite);
                 autoEvent.WaitOne();
                 t.Dispose();
             }
@@ -393,16 +395,24 @@ namespace PlexService.Models
             // make sure we don't spawn a browser
             Log.Debug("Disabling first run.");
             DisableFirstRun(); 
-            if (_plex == null)
-            {
+            if (_plex == null) {
                 Log.Debug("No plex defined, checking for running process.");
                 //see if its running already
                 _plex = Process.GetProcessesByName(_plexName).FirstOrDefault();
                 if (_plex != null) {
-                    Log.Information("Killing existing Plex service.");
-                    _plex.Kill(true);
-                    KillSupportingProcesses();
-                    _plex = null;
+                    var owner = GetProcessOwner("PlexService");
+                    var plexOwner = GetProcessOwner(_plexName);
+                    if (owner != plexOwner) {
+                        Log.Information("Killing existing Plex service, owners don't match: {owner} != {plexOwner}", owner, plexOwner);
+                        _plex.Kill(true);
+                        KillSupportingProcesses();
+                        _plex = null;    
+                    } else {
+                        Log.Information("Plex is already running, attaching to existing process.");
+                        _plex.EnableRaisingEvents = true;
+                        _plex.Exited += Plex_Exited;
+                        State = PlexState.Running;
+                    }
                 }
                 
                 if (_plex == null)
@@ -446,6 +456,29 @@ namespace PlexService.Models
             //set the state back to stopped if we didn't achieve a running state
             if (State != PlexState.Running)
                 State = PlexState.Stopped;
+        }
+        
+        private static string GetProcessOwner(string processName)
+        {
+            var query = "Select * from Win32_Process Where Name = \"" + processName + "\"";
+            var searcher = new ManagementObjectSearcher(query);
+            var processList = searcher.Get();
+
+            foreach (var o in processList)
+            {
+                var obj = (ManagementObject)o;
+                object[] argList = { string.Empty, string.Empty };
+                var returnVal = Convert.ToInt32(obj.InvokeMethod("GetOwner", argList));
+                if (returnVal != 0) {
+                    continue;
+                }
+
+                // return DOMAIN\user
+                var owner = argList[1] + "\\" + argList[0];
+                return owner;
+            }
+
+            return "NO OWNER";
         }
 
         #endregion

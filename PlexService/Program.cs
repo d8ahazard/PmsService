@@ -26,14 +26,17 @@ namespace PlexService
 			
 			Log.Logger = lc.CreateLogger();
 			CreateHostBuilder(args, Log.Logger).Build().Run();
+			Log.Debug("Host builder done.");
 			Log.CloseAndFlush();
 		}
 		
 		private static IHostBuilder CreateHostBuilder(string[] args, ILogger logger) {
+			Log.Debug("Creating host builder.");
 			var settings = SettingsHandler.Load();
 			var url = "http://localhost:" + settings.ServerPort;
 			return Host.CreateDefaultBuilder(args)
 				.UseSerilog(logger)
+				.UseWindowsService()
 				.ConfigureServices(services => {
 					services.AddSingleton<IHostedService, PlexMediaServerService>();
 					services.AddSignalR();

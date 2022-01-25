@@ -219,13 +219,23 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="30"/>
+                                            <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition></RowDefinition>
+                                            <RowDefinition></RowDefinition>
+                                        </Grid.RowDefinitions>
                                         <TextBlock VerticalAlignment="Center" Text="Share (UNC path):" Margin="5"/>
-                                        <TextBox Grid.Column="1" VerticalAlignment="Center" Text="{Binding ShareName, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" Margin="0,5,5,5"
+                                        <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Text="{Binding ShareName, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" Margin="0,5,5,5"
                                                  d:DataContext="{d:DesignInstance }" />
-                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Drive Letter:" Margin="5"/>
-                                        <TextBox Grid.Column="3" VerticalAlignment="Center" Text="{Binding DriveLetter, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" Margin="0,5,5,5"
+                                        <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Text="Drive Letter:" Margin="5"/>
+                                        <TextBox Grid.Row="0" Grid.Column="3" VerticalAlignment="Center" Text="{Binding DriveLetter, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" Margin="0,5,5,5"
+                                                 d:DataContext="{d:DesignInstance }" />
+                                        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Username:" Margin="5"/>
+                                        <TextBox Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Text="{Binding DriveUsername, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" Margin="0,5,5,5"
+                                                 d:DataContext="{d:DesignInstance }" />
+                                        <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Text="Password:" Margin="5"/>
+                                        <TextBox Grid.Row="1" Grid.Column="3" VerticalAlignment="Center" Text="{Binding DrivePassword, UpdateSourceTrigger=PropertyChanged, ValidatesOnDataErrors=True, NotifyOnValidationError=True}" Margin="0,5,5,5"
                                                  d:DataContext="{d:DesignInstance }" />
                                     </Grid>
                                 </DataTemplate>
