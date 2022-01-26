@@ -69,8 +69,8 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="PlexService.ico" />
-    <Resource Include="PlexService_Bar.ico" />    
+    <EmbeddedResource Include="PlexService.ico" />
+    <None Remove="PlexService.svg" />    
   </ItemGroup>
   <ItemGroup>
     <Content Include="*.ico">

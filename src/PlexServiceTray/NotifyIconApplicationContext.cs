@@ -56,6 +56,8 @@ namespace PlexServiceTray
             _states = new Dictionary<string, bool>();
             // Moved directly to constructor to suppress nullable warnings.
             _components = new Container();
+            var assy = Environment.ProcessPath;
+            var appIcon = Icon.ExtractAssociatedIcon(assy);
             _notifyIcon = new NotifyIcon(_components)
             {
                 ContextMenuStrip = new ContextMenuStrip
@@ -66,7 +68,7 @@ namespace PlexServiceTray
                     DropShadowEnabled = true,
                     AutoSize = true
                 },
-                Icon = new Icon("PlexService.ico", SystemInformation.SmallIconSize),
+                Icon = appIcon,
                 Text = "Manage Plex Media Server Service",
                 Visible = true
             };

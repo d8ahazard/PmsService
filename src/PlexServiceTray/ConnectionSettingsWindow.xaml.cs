@@ -9,6 +9,8 @@ namespace PlexServiceTray
         public ConnectionSettingsWindow(string theme)
         {
             InitializeComponent();
+            var icon = IconHelper.GetIcon();
+            if (icon != null) Icon = icon;
             DataContext = new ConnectionSettingsViewModel();
             ThemeManager.Current.ChangeTheme(this, theme);
         }

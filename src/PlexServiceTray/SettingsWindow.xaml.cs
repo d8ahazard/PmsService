@@ -19,6 +19,8 @@ namespace PlexServiceTray
         public SettingsWindow(SettingsWindowViewModel settingsViewModel, HubConnection plexService)
         {
             InitializeComponent();
+            var icon = IconHelper.GetIcon();
+            if (icon != null) Icon = icon;
             _plexService = plexService;
             DataContext = settingsViewModel;
             var theme = settingsViewModel.WorkingSettings.Theme;

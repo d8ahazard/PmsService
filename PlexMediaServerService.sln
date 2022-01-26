@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31919.166
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexService", "PlexService\PlexService.csproj", "{502A2EAF-DABC-4D4B-B579-5953A3E03DD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexService", "src\PlexService\PlexService.csproj", "{502A2EAF-DABC-4D4B-B579-5953A3E03DD8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexServiceTray", "PlexServiceTray\PlexServiceTray.csproj", "{8729030F-D67D-40ED-8BB0-23CEEF6A3F82}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexServiceTray", "src\PlexServiceTray\PlexServiceTray.csproj", "{8729030F-D67D-40ED-8BB0-23CEEF6A3F82}"
 EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PlexServiceInstaller", "PlexServiceInstaller\PlexServiceInstaller.wixproj", "{5CACEAFA-5C9F-4A66-8FB9-DD35FB95B5CD}"
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "PlexServiceInstaller", "src\PlexServiceInstaller\PlexServiceInstaller.wixproj", "{5CACEAFA-5C9F-4A66-8FB9-DD35FB95B5CD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexServiceCommon", "PlexServiceCommon\PlexServiceCommon.csproj", "{C5E8CEE5-EAE6-4337-9CDF-55C907FF93C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PlexServiceCommon", "src\PlexServiceCommon\PlexServiceCommon.csproj", "{C5E8CEE5-EAE6-4337-9CDF-55C907FF93C7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

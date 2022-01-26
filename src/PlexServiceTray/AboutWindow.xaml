@@ -5,7 +5,7 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  Height="400" Width="450" WindowStyle="None" 
                  WindowStartupLocation="CenterScreen" AllowsTransparency="True" ResizeMode="NoResize" 
-                 TextOptions.TextFormattingMode="Display" UseLayoutRounding="True" Icon="PlexService_Bar.ico">
+                 TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

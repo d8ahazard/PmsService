@@ -5,7 +5,7 @@
                  xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
                  MinHeight="170" Height="170" MinWidth="450" Width="450" 
                  WindowStartupLocation="CenterScreen" ResizeMode="NoResize" 
-                 WindowStyle="None" local:DialogCloser.DialogResult="{Binding DialogResult}" Icon="PlexService_Bar.ico">
+                 WindowStyle="None" local:DialogCloser.DialogResult="{Binding DialogResult}">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
