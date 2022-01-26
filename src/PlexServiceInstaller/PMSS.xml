@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <!-- Folder Structure -->
+  <Directory Id="TARGETDIR" Name="SourceDir">
+    <Directory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLDIR" Name="PlexServiceTray">
+      </Directory>
+    </Directory>
+    <Directory Id="ProgramMenuFolder">
+      <Directory Id="MyShortcutsDir" Name="PlexServiceTray" />
+    </Directory>
+  </Directory>
+  <!-- Files -->
+  <DirectoryRef Id="INSTALLDIR">
+    <Component Id="PlexServiceCommon.pdb">
+      <File Id="PlexServiceCommon.pdb" Name="PlexServiceCommon.pdb" Source="..\PlexServiceTray\bin\publish\PlexServiceCommon.pdb" KeyPath="yes" />
+    </Component>
+  </DirectoryRef>
+  <DirectoryRef Id="INSTALLDIR">
+    <Component Id="PlexServiceTray.exe">
+      <File Id="PlexServiceTray.exe" Name="PlexServiceTray.exe" Source="..\PlexServiceTray\bin\publish\PlexServiceTray.exe" KeyPath="yes" />
+    </Component>
+  </DirectoryRef>
+  <DirectoryRef Id="INSTALLDIR">
+    <Component Id="PlexServiceTray.pdb">
+      <File Id="PlexServiceTray.pdb" Name="PlexServiceTray.pdb" Source="..\PlexServiceTray\bin\publish\PlexServiceTray.pdb" KeyPath="yes" />
+    </Component>
+  </DirectoryRef>
+  <!-- Application Components -->
+  <Feature Id="ProductFeature" Title="PlexServiceTray" Level="1">
+    <ComponentRef Id="PlexServiceCommon.pdb" />
+    <ComponentRef Id="PlexServiceTray.exe" />
+    <ComponentRef Id="PlexServiceTray.pdb" />
+  </Feature>
+</Wix>
