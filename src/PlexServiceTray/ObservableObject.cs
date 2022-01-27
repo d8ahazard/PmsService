@@ -9,18 +9,18 @@ namespace PlexServiceTray
 {
     public abstract class ObservableObject : INotifyPropertyChanged, IDataErrorInfo
     {
-        protected object ValidationContext { get; set; }
+        protected object? ValidationContext { get; init; }
 
-        internal bool _isSelected;
+        internal bool IsSelectedInternal;
 
         public virtual bool IsSelected
         {
-            get => _isSelected;
+            get => IsSelectedInternal;
             set 
             {
-                if (_isSelected == value) return;
+                if (IsSelectedInternal == value) return;
 
-                _isSelected = value;
+                IsSelectedInternal = value;
                 OnPropertyChanged(nameof(IsSelected));
             }
         }
@@ -61,7 +61,7 @@ namespace PlexServiceTray
         {
             get
             {
-                return GetType().GetProperties().Where(p => GetValidations(p).Length != 0).ToDictionary(p => p.Name, p => GetValueGetter(p));
+                return GetType().GetProperties().Where(p => GetValidations(p).Length != 0).ToDictionary(p => p.Name, GetValueGetter);
             }
         }
 
@@ -69,11 +69,11 @@ namespace PlexServiceTray
         {
             get
             {
-                return GetType().GetProperties().Where(p => GetValidations(p).Length != 0).ToDictionary(p => p.Name, p => GetValidations(p));
+                return GetType().GetProperties().Where(p => GetValidations(p).Length != 0).ToDictionary(p => p.Name, GetValidations);
             }
         }
 
-        private ValidationAttribute[] GetValidations(PropertyInfo property)
+        private ValidationAttribute[] GetValidations(ICustomAttributeProvider property)
         {
             return (ValidationAttribute[])property.GetCustomAttributes(typeof(ValidationAttribute), true);
         }
@@ -83,7 +83,7 @@ namespace PlexServiceTray
             return property.GetValue(this, null);
         }
 
-        public string? Error { get; private set; }
+        public string Error { get; private set; } = string.Empty;
 
         private void UpdateError()
         {
@@ -102,6 +102,7 @@ namespace PlexServiceTray
                 if (PropertyGetters.ContainsKey(columnName))
                 {
                     var value = PropertyGetters[columnName];
+                    if (value == null) return string.Empty;
                     var errors = Validators[columnName].Where(v => !Validate(v, value))
                         .Select(v => v.ErrorMessage).ToArray();
                     OnPropertyChanged(nameof(Error));
@@ -115,7 +116,7 @@ namespace PlexServiceTray
 
         private bool Validate(ValidationAttribute v, object value)
         {
-            return v.GetValidationResult(value, new ValidationContext(ValidationContext, null, null)) == ValidationResult.Success;
+            return ValidationContext != null && v.GetValidationResult(value, new ValidationContext(ValidationContext, null, null)) == ValidationResult.Success;
         }
 
         #endregion

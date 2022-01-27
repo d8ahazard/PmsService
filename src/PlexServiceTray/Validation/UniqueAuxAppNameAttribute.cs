@@ -7,24 +7,24 @@ namespace PlexServiceTray.Validation
     {
         private new const string ErrorMessage = "There's already an Auxilliary Application called {0}.";
 
-        private SettingsWindowViewModel _context;
+        private SettingsWindowViewModel? _context;
 
         public override string FormatErrorMessage(string name)
         {
             return string.Format(ErrorMessage, name);
         }
 
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             return IsValid(value, null) == ValidationResult.Success;
         }
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult? IsValid(object? value, ValidationContext? validationContext)
         {
             if (validationContext != null)
                 _context = validationContext.ObjectInstance as SettingsWindowViewModel;
             var name = value as string;
-            base.ErrorMessage = FormatErrorMessage(name);
+            base.ErrorMessage = FormatErrorMessage(name ?? string.Empty);
             if (string.IsNullOrEmpty(name) || _context?.AuxiliaryApplications == null) {
                 return ValidationResult.Success;
             }

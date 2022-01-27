@@ -85,11 +85,11 @@ namespace PlexServiceTray {
         }
 
         public override bool IsSelected {
-            get => _isSelected;
+            get => IsSelectedInternal;
             set {
-                if (_isSelected == value) return;
+                if (IsSelectedInternal == value) return;
 
-                _isSelected = value;
+                IsSelectedInternal = value;
                 OnPropertyChanged(nameof(IsSelected));
             }
         }
@@ -101,7 +101,7 @@ namespace PlexServiceTray {
 
         public AuxiliaryApplicationViewModel(AuxiliaryApplication auxApplication, HubConnection hubConnection,
             Dictionary<string, bool> states,
-            SettingsWindowViewModel context) {
+            SettingsWindowViewModel? context) {
             _auxApplication = auxApplication;
             _connection = hubConnection;
             _running = states.ContainsKey(auxApplication.Name) && states[auxApplication.Name];

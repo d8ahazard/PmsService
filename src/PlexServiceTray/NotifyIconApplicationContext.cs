@@ -45,7 +45,7 @@ namespace PlexServiceTray
         {
             if (disposing && _components != null)
             {
-                Disconnect();
+                Disconnect().ConfigureAwait(false);
                 _components.Dispose();
                 _notifyIcon.Dispose();
             }
@@ -56,8 +56,6 @@ namespace PlexServiceTray
             _states = new Dictionary<string, bool>();
             // Moved directly to constructor to suppress nullable warnings.
             _components = new Container();
-            var assy = Environment.ProcessPath;
-            var appIcon = Icon.ExtractAssociatedIcon(assy);
             _notifyIcon = new NotifyIcon(_components)
             {
                 ContextMenuStrip = new ContextMenuStrip
@@ -68,10 +66,17 @@ namespace PlexServiceTray
                     DropShadowEnabled = true,
                     AutoSize = true
                 },
-                Icon = appIcon,
                 Text = "Manage Plex Media Server Service",
                 Visible = true
             };
+            var assembly = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(assembly)) {
+                var appIcon = Icon.ExtractAssociatedIcon(assembly);
+                if (appIcon != null) {
+                    _notifyIcon.Icon = appIcon;
+                }
+            }
+  
             _notifyIcon.MouseClick += NotifyIcon_Click;
             _notifyIcon.MouseDoubleClick += NotifyIcon_DoubleClick;
             _notifyIcon.ContextMenuStrip.Opening += ContextMenuStrip_Opening;
@@ -116,21 +121,11 @@ namespace PlexServiceTray
         public async Task Connect()
         {
             if (_connection.State is HubConnectionState.Connected or HubConnectionState.Connecting) {
-                Log.Debug("Already connected or connecting..." + _connection.State);
                 return;
             }
-            Log.Debug("Connect called...");
             if (_connection != null) {
                 try {
-                    Log.Debug("Connecting to client.");
                     await _connection.StartAsync();
-                    if (_connection.State == HubConnectionState.Connected) {
-                        Log.Debug("Connected??");
-                    } else {
-                        Log.Debug("Not connected? " + _connection.State);
-                    }
-                    
-                    Log.Debug("Connection configured.");
                 } catch (Exception e) {
                     Log.Debug("Connection error: " + e.Message);
                 }
@@ -149,7 +144,7 @@ namespace PlexServiceTray
         }
 
         private async Task Callback_Reconnected(string? arg) {
-            Log.Debug("Reconnected!!");
+            Log.Debug("Reconnected.");
             await DrawMenu();
         }
 
@@ -160,7 +155,6 @@ namespace PlexServiceTray
 
         private async Task Callback_StateChange(PlexState description) {
             _state = description;
-            Log.Debug("State change fired: " + description);
             await DrawMenu();
             _notifyIcon.ShowBalloonTip(2000, "Plex Service", PlexStateString(), ToolTipIcon.Info);
         }
@@ -177,18 +171,18 @@ namespace PlexServiceTray
         /// <summary>
         /// Disconnect from websocket
         /// </summary>
-        private void Disconnect()
+        private async Task Disconnect()
         {
-            Log.Debug("Disconnecting??");
+            Log.Debug("Disconnecting...");
             try {
-                _connection.StopAsync().ConfigureAwait(false);
-                _connection.DisposeAsync().ConfigureAwait(false);
+                await _connection.StopAsync();
+                await _connection.DisposeAsync();
 
             } catch {
                 //
             }
 
-            DrawMenu().ConfigureAwait(false);
+            await DrawMenu().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -201,7 +195,6 @@ namespace PlexServiceTray
                 return;
             }
 
-            Log.Debug("Notify icon right clicked?");
             var foo = e.Location;
             var target = _notifyIcon.ContextMenuStrip.PointToScreen(foo);
             target.X -= _notifyIcon.ContextMenuStrip.Height + 10;
@@ -219,7 +212,6 @@ namespace PlexServiceTray
                 return;
             }
 
-            Log.Debug("Double click");
             OpenManager_Click(sender, e);
         }
 
@@ -230,7 +222,6 @@ namespace PlexServiceTray
         /// <param name="e"></param>
         private async void ContextMenuStrip_Opening(object? sender, CancelEventArgs e)
         {
-            Log.Debug("Opening");
             if (_connection.State is not HubConnectionState.Connected or HubConnectionState.Connecting) {
                 await Connect();
                 if (_connection.State is HubConnectionState.Connected) await DrawMenu();
@@ -256,7 +247,6 @@ namespace PlexServiceTray
                 {
                     Log.Debug("Saving settings...");
                     SetSettings(_viewModel.WorkingSettings);
-                    Log.Debug("Done.");
                 }
                 catch(Exception ex)
                 {
@@ -280,7 +270,6 @@ namespace PlexServiceTray
         // open the context menu.
         private async Task DrawMenu() {
             await Task.FromResult(true);
-            Log.Debug("Redrawing menu...");
             _notifyIcon.ContextMenuStrip.Items.Clear();
 
             if (_connection.State == HubConnectionState.Connected) 
@@ -397,17 +386,16 @@ namespace PlexServiceTray
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ConnectionSettingsCommand(object? sender, EventArgs e) 
+        private async void ConnectionSettingsCommand(object? sender, EventArgs e) 
         {
             var theme = GetTheme();
             _connectionSettingsWindow = new ConnectionSettingsWindow(theme);
             if (_connectionSettingsWindow.ShowDialog() == true)
             {
                 //if the user saved the settings, then reconnect using the new values
-                try
-                {
-                    Disconnect();
-                    Connect().ConfigureAwait(false);
+                try {
+                    await Disconnect();
+                    await Connect().ConfigureAwait(false);
                 } 
                 catch (Exception ex)
                 {
@@ -452,7 +440,7 @@ namespace PlexServiceTray
         /// <param name="e"></param>
         private void ExitCommand(object? sender, EventArgs e)
         {
-            Disconnect();
+            Disconnect().ConfigureAwait(false);
             ExitThread();
         }
 
@@ -511,7 +499,6 @@ namespace PlexServiceTray
         /// <param name="e"></param>
         private void ViewLogs_Click(object? sender, EventArgs e) 
         {
-            Log.Debug("View log click...");
             var sa = _connectionSettings.ServerAddress;
             // Use windows shell to open log file in whatever app the user uses...
             var fileToOpen = string.Empty;
@@ -520,7 +507,6 @@ namespace PlexServiceTray
                 // If we're local to the service, just open the file.
                 if (sa is "127.0.0.1" or "0.0.0.0" or "localhost") {
                     fileToOpen = _logPath ?? PlexDirHelper.LogFile;
-                    Log.Debug("Using local file: " + fileToOpen);
                 } else {
                     Logger("Requesting log.");
                     // Otherwise, request the log data from the server, save it to a temp file, and open that.
@@ -538,7 +524,6 @@ namespace PlexServiceTray
                 }
 
                 if (string.IsNullOrEmpty(fileToOpen)) return;
-                Log.Debug("Opening: " + fileToOpen);
                 Process.Start("explorer", fileToOpen);
             }
             catch (Exception ex) 

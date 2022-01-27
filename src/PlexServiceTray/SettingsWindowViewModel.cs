@@ -126,26 +126,26 @@ namespace PlexServiceTray
         }
 
 
-        private ObservableCollection<AuxiliaryApplicationViewModel> _auxilaryApplications;
+        private readonly ObservableCollection<AuxiliaryApplicationViewModel> _auxiliaryApplications = new();
         /// <summary>
         /// Collection of Auxiliary applications to run alongside plex
         /// </summary>
         public ObservableCollection<AuxiliaryApplicationViewModel> AuxiliaryApplications
         {
-            get => _auxilaryApplications;
-            set {
-                if (_auxilaryApplications == value) {
+            get => _auxiliaryApplications;
+            init {
+                if (_auxiliaryApplications == value) {
                     return;
                 }
 
-                _auxilaryApplications = value;
+                _auxiliaryApplications = value;
                 OnPropertyChanged(nameof(AuxiliaryApplications));
             }
         }
 
-        private AuxiliaryApplicationViewModel _selectedAuxApplication;
+        private AuxiliaryApplicationViewModel? _selectedAuxApplication;
 
-        public AuxiliaryApplicationViewModel SelectedAuxApplication
+        public AuxiliaryApplicationViewModel? SelectedAuxApplication
         {
             get => _selectedAuxApplication;
             set
@@ -159,12 +159,12 @@ namespace PlexServiceTray
             }
         }
 
-        private ObservableCollection<DriveMapViewModel> _driveMaps;
+        private readonly ObservableCollection<DriveMapViewModel> _driveMaps = new();
 
         public ObservableCollection<DriveMapViewModel> DriveMaps
         {
             get => _driveMaps;
-            set {
+            init {
                 if (_driveMaps == value) {
                     return;
                 }
@@ -174,9 +174,9 @@ namespace PlexServiceTray
             }
         }
 
-        private DriveMapViewModel _selectedDriveMap;
+        private DriveMapViewModel? _selectedDriveMap;
 
-        public DriveMapViewModel SelectedDriveMap
+        public DriveMapViewModel? SelectedDriveMap
         {
             get => _selectedDriveMap;
             set {
@@ -270,7 +270,7 @@ namespace PlexServiceTray
         /// Allow the user to add a new Auxiliary application
         /// </summary>
         #region AddCommand
-        RelayCommand _addCommand;
+        RelayCommand? _addCommand;
         public RelayCommand AddCommand => _addCommand ??= new RelayCommand(OnAdd);
 
         private void OnAdd(object parameter)
@@ -302,7 +302,7 @@ namespace PlexServiceTray
         /// Remove the selected auxiliary application
         /// </summary>
         #region RemoveCommand
-        RelayCommand _removeCommand;
+        RelayCommand? _removeCommand;
         public RelayCommand RemoveCommand => _removeCommand ??= new RelayCommand(OnRemove, CanRemove); 
 
         private bool CanRemove(object parameter)
@@ -320,9 +320,11 @@ namespace PlexServiceTray
             switch (SelectedTab)
             {
                 case 0:
+                    if (SelectedAuxApplication == null) return;
                     AuxiliaryApplications.Remove(SelectedAuxApplication);
                     break;
                 case 1:
+                    if (SelectedDriveMap == null) return;
                     DriveMaps.Remove(SelectedDriveMap);
                     break;
             }
@@ -335,7 +337,7 @@ namespace PlexServiceTray
         /// Save the settings file
         /// </summary>
         #region SaveCommand
-        RelayCommand _saveCommand;
+        RelayCommand? _saveCommand;
         public RelayCommand SaveCommand => _saveCommand ??= new RelayCommand(OnSave, CanSave);
 
         private bool CanSave(object parameter)
@@ -364,7 +366,7 @@ namespace PlexServiceTray
         /// Close the dialogue without saving changes
         /// </summary>
         #region CancelCommand
-        RelayCommand _cancelCommand;
+        RelayCommand? _cancelCommand;
 
         private readonly Dictionary<string, bool> _states;
         public RelayCommand CancelCommand => _cancelCommand ??= new RelayCommand(OnCancel);
