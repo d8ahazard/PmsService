@@ -87,14 +87,14 @@
   <Import Project="$(WixTargetsPath)" />
   <Target Name="BeforeBuild">
     <Exec Command="dotnet publish ..\PlexService\PlexService.csproj -c $(Configuration) -r win-x64 -o ..\PlexService\bin\publish  /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained true" />
-    <Exec Command="dotnet publish ..\PlexServiceTray\PlexServiceTray.csproj -c $(Configuration) -r win-x64 -o ..\src\PlexServiceTray\bin\publish  /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained true" />
+    <Exec Command="dotnet publish ..\PlexServiceTray\PlexServiceTray.csproj -c $(Configuration) -r win-x64 -o ..\PlexServiceTray\bin\publish  /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained true" />
     <PropertyGroup>
-      <LinkerBaseInputPaths>..\..\src\PlexService\bin\publish</LinkerBaseInputPaths>
-      <DefineConstants>PmsBasePath=..\..\src\PlexService\bin\publish</DefineConstants>
+      <LinkerBaseInputPaths>..\PlexService\bin\publish</LinkerBaseInputPaths>
+      <DefineConstants>PmsBasePath=..\PlexService\bin\publish</DefineConstants>
     </PropertyGroup>
     <PropertyGroup>
-      <LinkerBaseInputPaths>..\..\src\PlexServiceTray\bin\publish</LinkerBaseInputPaths>
-      <DefineConstants>PmsTrayBasePath=..\..\src\PlexServiceTray\bin\publish</DefineConstants>
+      <LinkerBaseInputPaths>..\PlexServiceTray\bin\publish</LinkerBaseInputPaths>
+      <DefineConstants>PmsTrayBasePath=..\PlexServiceTray\bin\publish</DefineConstants>
     </PropertyGroup>    
   </Target>
   <!--

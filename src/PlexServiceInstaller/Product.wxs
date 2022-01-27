@@ -80,7 +80,7 @@
         </UI>
         <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Tray Application" />
         <UIRef Id="WixUI_Common" />
-        <Property Id="WixShellExecTarget" Value="[#PlexServiceTrayExe]" />
+        <Property Id="WixShellExecTarget" Value="[#PLEXSERVICETRAY.EXE]" />
         <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
     </Product>
     <Fragment>
@@ -139,7 +139,7 @@
                         <File Id="PLEXSERVICETRAY.PDB" Name="PlexServiceTray.pdb" Source="$(var.PmsTrayBasePath)PlexServiceTray.pdb" KeyPath="yes" />
                     </Component>
                     <Component Id="PlexServiceTrayAutostart" Guid="5BD99A14-BFA7-4D0A-9A0F-462C2AA1BEC1">
-                        <RegistryValue Id="PlexServiceTrayAs.rst" Root="HKLM" Action="write" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="PlexServiceTray" Value="[INSTALLDIR]PlexServiceTray.exe" Type="string" />
+                        <RegistryValue Id="PlexServiceTrayAs.rst" Root="HKLM" Action="write" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="PlexServiceTray" Value="[PMSTRAYINSTALLDIR]PlexServiceTray.exe" Type="string" />
                         <Condition>ASSISTANCE_START_VIA_REGISTRY</Condition>
                     </Component>
                 </Directory>
