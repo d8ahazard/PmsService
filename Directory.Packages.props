@@ -1,0 +1,89 @@
+﻿<Project>
+    <ItemGroup>
+        <PackageVersion Include="mscorlib" Version="4.0.0.0" />
+        <PackageVersion Include="netstandard" Version="2.1.0.0" />
+        <PackageVersion Include="PresentationCore" Version="6.0.0.0" />
+        <PackageVersion Include="PresentationFramework" Version="6.0.0.0" />
+        <PackageVersion Include="System" Version="4.0.0.0" />
+        <PackageVersion Include="System.ComponentModel.DataAnnotations" Version="4.0.0.0" />
+        <PackageVersion Include="System.Core" Version="4.0.0.0" />
+        <PackageVersion Include="System.Runtime.Serialization" Version="4.0.0.0" />
+        <PackageVersion Include="System.ServiceProcess" Version="4.0.0.0" />
+        <PackageVersion Include="System.Xaml" Version="6.0.0.0" />
+        <PackageVersion Include="System.Xml" Version="4.0.0.0" />
+        <PackageVersion Include="System.Xml.Linq" Version="4.0.0.0" />
+        <PackageVersion Include="System.Data.DataSetExtensions" Version="4.0.0.0" />
+        <PackageVersion Include="System.Data" Version="4.0.0.0" />
+        <PackageVersion Include="System.Drawing" Version="6.0.0.0" />
+        <PackageVersion Include="Meziantou.Framework.Win32.CredentialManager" Version="1.4.2" />
+        <PackageVersion Include="Newtonsoft.Json">
+            <Version>13.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog.Sinks.Async">
+            <Version>1.5.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog.Sinks.Console">
+            <Version>4.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog.Sinks.File">
+            <Version>5.0.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="System.Diagnostics.EventLog">
+            <Version>6.0.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="System.Management">
+            <Version>6.0.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="ControlzEx">
+            <Version>5.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="FontAwesome.WPF">
+            <Version>4.7.0.9</Version>
+        </PackageVersion>
+        <PackageVersion Include="MahApps.Metro">
+            <Version>2.4.9</Version>
+        </PackageVersion>
+        <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client">
+            <Version>6.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="Newtonsoft.Json">
+            <Version>13.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="Ookii.Dialogs.Wpf">
+            <Version>5.0.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog">
+            <Version>2.10.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog.Sinks.Async">
+            <Version>1.5.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog.Sinks.Console">
+            <Version>4.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="Serilog.Sinks.File">
+            <Version>5.0.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="Microsoft.Extensions.Hosting">
+            <Version>6.0.0</Version>
+        </PackageVersion>
+        <PackageVersion Include="Newtonsoft.Json">
+            <Version>13.0.1</Version>
+        </PackageVersion>
+        <PackageVersion Include="Meziantou.Framework.Win32.CredentialManager">
+            <Version>1.4.2</Version>
+        </PackageVersion>
+        <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.2"/>
+        <PackageVersion Include="Serilog" Version="2.10.0" />
+        <PackageVersion Include="Serilog.Extensions.Hosting" Version="4.2.0" />
+        <PackageVersion Include="Serilog.Sinks.Async" Version="1.5.0" />
+        <PackageVersion Include="Serilog.Sinks.Console" Version="4.0.1" />
+        <PackageVersion Include="Serilog.Sinks.File" Version="5.0.0" />
+        <PackageVersion Include="System.ServiceModel.Primitives" Version="4.9.0" />
+        <PackageVersion Include="Microsoft.AspNet.SignalR.Client" Version="2.4.2" />
+        <PackageVersion Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.11" />
+        <PackageVersion Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="5.0.11" />
+        <PackageVersion Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+        <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="3.0.0" />
+    </ItemGroup>
+</Project>
