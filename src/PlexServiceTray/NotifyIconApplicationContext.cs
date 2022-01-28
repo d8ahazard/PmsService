@@ -239,8 +239,10 @@ namespace PlexServiceTray
             //Don't continue if teh service or settings are null
             if (_connection.State != HubConnectionState.Connected || _settings is null) return;
 
-            _viewModel = new SettingsWindowViewModel(_connection, _states, _settings);
-            _settingsWindow = new SettingsWindow(_viewModel, _connection);
+            try {
+                _viewModel = new SettingsWindowViewModel(_connection, _states, _settings);
+                _settingsWindow = new SettingsWindow(_viewModel, _connection);
+            
             if (_settingsWindow.ShowDialog() == true)
             {
                 try
@@ -264,6 +266,11 @@ namespace PlexServiceTray
             }
             _settingsWindow = null;
             _viewModel = null;
+            } catch (Exception f) {
+                Log.Debug("Exception in settings command: " + f.Message + " at " + f.StackTrace);
+                return;
+            }
+
         }
 
         // Automagically re-draw our context menu on state/settings changes, versus trying to do it when we 

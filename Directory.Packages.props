@@ -37,8 +37,8 @@
         <PackageVersion Include="ControlzEx">
             <Version>5.0.1</Version>
         </PackageVersion>
-        <PackageVersion Include="FontAwesome.WPF">
-            <Version>4.7.0.9</Version>
+        <PackageVersion Include="FontAwesome5">
+            <Version>2.1.6</Version>
         </PackageVersion>
         <PackageVersion Include="MahApps.Metro">
             <Version>2.4.9</Version>

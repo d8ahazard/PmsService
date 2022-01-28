@@ -92,7 +92,7 @@
   <ItemGroup>
     <PackageReference Include="ControlzEx">
     </PackageReference>
-    <PackageReference Include="FontAwesome.WPF">
+    <PackageReference Include="FontAwesome5">
     </PackageReference>
     <PackageReference Include="MahApps.Metro">
     </PackageReference>

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using Microsoft.AspNetCore.SignalR.Client;
 using PlexServiceCommon;
+using Serilog;
 
 namespace PlexServiceTray
 {
@@ -270,7 +271,7 @@ namespace PlexServiceTray
         /// Allow the user to add a new Auxiliary application
         /// </summary>
         #region AddCommand
-        RelayCommand? _addCommand;
+        RelayCommand _addCommand;
         public RelayCommand AddCommand => _addCommand ??= new RelayCommand(OnAdd);
 
         private void OnAdd(object parameter)
@@ -285,7 +286,7 @@ namespace PlexServiceTray
                         {
                             IsExpanded = true
                         };
-                    AuxiliaryApplications.Add(newAuxAppViewModel);
+					AuxiliaryApplications.Add(newAuxAppViewModel);
                     break;
                 case 1:
                     var newDriveMap = new DriveMap(@"\\computer\share", "Z");
@@ -302,7 +303,7 @@ namespace PlexServiceTray
         /// Remove the selected auxiliary application
         /// </summary>
         #region RemoveCommand
-        RelayCommand? _removeCommand;
+        RelayCommand _removeCommand;
         public RelayCommand RemoveCommand => _removeCommand ??= new RelayCommand(OnRemove, CanRemove); 
 
         private bool CanRemove(object parameter)
@@ -321,7 +322,7 @@ namespace PlexServiceTray
             {
                 case 0:
                     if (SelectedAuxApplication == null) return;
-                    AuxiliaryApplications.Remove(SelectedAuxApplication);
+					AuxiliaryApplications.Remove(SelectedAuxApplication);
                     break;
                 case 1:
                     if (SelectedDriveMap == null) return;
@@ -337,7 +338,7 @@ namespace PlexServiceTray
         /// Save the settings file
         /// </summary>
         #region SaveCommand
-        RelayCommand? _saveCommand;
+        RelayCommand _saveCommand;
         public RelayCommand SaveCommand => _saveCommand ??= new RelayCommand(OnSave, CanSave);
 
         private bool CanSave(object parameter)
@@ -366,19 +367,18 @@ namespace PlexServiceTray
         /// Close the dialogue without saving changes
         /// </summary>
         #region CancelCommand
-        RelayCommand? _cancelCommand;
+        RelayCommand _cancelCommand;
 
         private readonly Dictionary<string, bool> _states;
         public RelayCommand CancelCommand => _cancelCommand ??= new RelayCommand(OnCancel);
 
         private void OnCancel(object parameter)
         {
+            Log.Debug("ON CANCEL");
             DialogResult = false;
         }
 
         #endregion CancelCommand
-
-        
 
         
     }

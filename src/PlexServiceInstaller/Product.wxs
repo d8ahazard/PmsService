@@ -21,7 +21,8 @@
         <Media Id="1" Cabinet="PlexService.cab" EmbedCab="yes" />
         <Property Id="SERVICE_USER" Admin="yes" />
         <Property Id="SERVICE_PASSWORD" Admin="yes" />
-        <Feature Id="PlexServiceFeature" Title="Plex Service" Description="Plex Service 1.1.9" Level="1" ConfigurableDirectory="INSTALLDIR">
+        <Feature Id="PlexServiceFeature" Title="Plex Service" Description="Plex Service 1.1.9" Level="0" ConfigurableDirectory="INSTALLDIR">
+            <Condition Level="1">INSTALL_PMSSERVICE</Condition>
             <ComponentRef Id="LicensesComponent" />
             <ComponentRef Id="PlexServiceStartMenu" />
             <ComponentRef Id="PlexServiceHKLM" />
@@ -33,7 +34,8 @@
             <ComponentRef Id="PlexServiceXmlComponent" />
             <ComponentRef Id="WebConfigComponent" />
         </Feature>
-        <Feature Id="PlexServiceTrayFeature" Title="Plex Service Tray" Description="Plex Service Tray 1.1.9" Level="1" ConfigurableDirectory="INSTALLDIR">
+        <Feature Id="PlexServiceTrayFeature" Title="Plex Service Tray" Description="Plex Service Tray 1.1.9" Level="0" ConfigurableDirectory="INSTALLDIR">
+            <Condition Level="1">INSTALL_PMSSERVICETRAY</Condition>
             <ComponentRef Id="PlexServiceTrayAutostart" />
             <ComponentRef Id="PlexServiceStartMenu" />
             <ComponentRef Id="PlexServiceHKLM" />
@@ -58,22 +60,29 @@
             <DialogRef Id="ResumeDlg" />
             <DialogRef Id="UserExit" />
             <DialogRef Id="ServiceCredentialsDlg" />
+            <DialogRef Id="FeatureDlg" />
             <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
             <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication" Order="999">
-                WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed
+                WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed and INSTALL_PMSSERVICETRAY = "TRUE"
             </Publish>
-            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="ServiceCredentialsDlg">1</Publish>
-            <Publish Dialog="ServiceCredentialsDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="1">
-                Installed
+            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="FeatureDlg">1</Publish>
+            <Publish Dialog="FeatureDlg" Control="Next" Event="NewDialog" Value="ServiceCredentialsDlg">
+                INSTALL_PMSSERVICE = "TRUE"
             </Publish>
-            <Publish Dialog="ServiceCredentialsDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">NOT
-                Installed
+            <Publish Dialog="FeatureDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="2">
+                <![CDATA[INSTALL_PMSSERVICE <> "TRUE"]]>
             </Publish>
-            <Publish Dialog="ServiceCredentialsDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="2">
-                1
-            </Publish>           
-            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ServiceCredentialsDlg" Order="1">
-                NOT Installed OR WixUI_InstallMode="Change"
+            <Publish Dialog="ServiceCredentialsDlg" Control="Back" Event="NewDialog" Value="FeatureDlg" Order="2">
+                INSTALL_PMSSERVICE = "TRUE"
+            </Publish>
+            <Publish Dialog="ServiceCredentialsDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="3">
+                INSTALL_PMSSERVICE = "TRUE"
+            </Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ServiceCredentialsDlg">
+                INSTALL_PMSSERVICE = "TRUE"
+            </Publish>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="FeatureDlg" Order="2">
+                <![CDATA[INSTALL_PMSSERVICE <> "TRUE"]]>
             </Publish>
             <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1
             </Publish>
